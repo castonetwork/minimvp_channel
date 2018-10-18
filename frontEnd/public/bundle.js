@@ -136681,10 +136681,11 @@ const initApp = () => {
       const idStr = peerInfo.id.toB58String();
       console.log("Discovered: " + idStr);
 
-      node.dial(peerInfo, (err, conn) => {
+      node.dialProtocol(peerInfo, '/kitty', (err, conn) => {
         if (err) {
           return console.log("Failed to dial:", idStr);
         }
+        console.log("hooray!")
       });
     });
     node.start(err => {
