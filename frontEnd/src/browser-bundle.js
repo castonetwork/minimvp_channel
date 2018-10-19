@@ -1,6 +1,7 @@
 "use strict";
 
 const WebRTCStar = require("libp2p-webrtc-star");
+const WSStar = require('libp2p-websocket-star');
 const WebSockets = require("libp2p-websockets");
 const Mplex = require("libp2p-mplex");
 const SPDY = require("libp2p-spdy");
@@ -25,13 +26,14 @@ const bootstrapers = [
 class Node extends libp2p {
   constructor(_options) {
     const wrtcStar = new WebRTCStar({ id: _options.peerInfo.id });
+    const ws = new WSStar({ id: _options.peerInfo.id });
 
     const defaults = {
       modules: {
-        transport: [wrtcStar, new WebSockets()],
+        transport: [wrtcStar, ws],
         streamMuxer: [Mplex, SPDY],
         connEncryption: [SECIO],
-        peerDiscovery: [wrtcStar.discovery, Bootstrap]
+        peerDiscovery: [ ws.discovery, wrtcStar.discovery, Bootstrap]
       },
       config: {
         peerDiscovery: {
