@@ -1,13 +1,13 @@
 "use strict";
 
-const TCP = require("libp2p-tcp");
-const MulticastDNS = require("libp2p-mdns");
-const WS = require("libp2p-websockets");
-const WebSocketStar = require("libp2p-websocket-star");
-const Bootstrap = require("libp2p-bootstrap");
+const TCP = require('libp2p-tcp');
+const WSStar = require("libp2p-websocket-star");
+const WebSockets = require("libp2p-websockets");
 const KadDHT = require("libp2p-kad-dht");
 const Multiplex = require("libp2p-mplex");
+const SPDY = require("libp2p-spdy");
 const SECIO = require("libp2p-secio");
+const Bootstrap = require("libp2p-bootstrap");
 const libp2p = require("libp2p");
 
 const bootstrapers = [
@@ -25,15 +25,14 @@ const bootstrapers = [
 
 class Node extends libp2p {
   constructor(_options) {
-    const wsstar = new WebSocketStar({ id: _options.peerInfo.id });
+    const ws = new WSStar({ id: _options.peerInfo.id });
 
     const defaults = {
       modules: {
-        transport: [TCP, WS, wsstar],
+        transport: [TCP],
         streamMuxer: [Multiplex],
         connEncryption: [SECIO],
-        peerDiscovery: [MulticastDNS, Bootstrap, wsstar.discovery],
-        dht: KadDHT
+        peerDiscovery: [Bootstrap],
       },
       config: {
         peerDiscovery: {
@@ -45,9 +44,6 @@ class Node extends libp2p {
             enabled: true,
             list: bootstrapers
           },
-          websocketStar: {
-            enabled: true
-          }
         },
         dht: {
           kBucketSize: 20
