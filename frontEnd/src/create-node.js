@@ -9,16 +9,16 @@ function createNode (callback) {
       return callback(err)
     }
 
-    const peerIdStr = peerInfo.id.toB58String()
-    const ma = `/dns4/star-signal.cloud.ipfs.team/tcp/443/wss/p2p-webrtc-star/ipfs/${peerIdStr}`
+    const peerIdStr = peerInfo.id.toB58String();
+    const ma = `/dns4/star-signal.cloud.ipfs.team/tcp/443/wss/p2p-webrtc-star/ipfs/${peerIdStr}`;
 
-    peerInfo.multiaddrs.add(ma)
-    peerInfo.multiaddrs.add(multiaddr("/dns4/ws-star-signal-1.servep2p.com/tcp/443/wss/p2p-websocket-star/"));
+    peerInfo.multiaddrs.add(ma);
+    peerInfo.multiaddrs.add(multiaddr("/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star/"));
     const node = new Node({
       peerInfo
-    })
+    });
 
-    node.idStr = peerIdStr
+    node.idStr = peerIdStr;
     callback(null, node)
   })
 }

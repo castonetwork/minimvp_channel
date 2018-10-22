@@ -25,37 +25,15 @@ const bootstrapers = [
 
 class Node extends libp2p {
   constructor(_options) {
-    const ws = new WSStar({ id: _options.peerInfo.id });
-
+    const ws = new WSStar({id: _options.peerInfo.id});
     const defaults = {
       modules: {
-        transport: [TCP],
-        streamMuxer: [Multiplex],
-        connEncryption: [SECIO],
-        peerDiscovery: [Bootstrap],
-      },
-      config: {
-        peerDiscovery: {
-          mdns: {
-            enabled: true
-          },
-          bootstrap: {
-            interval: 10000,
-            enabled: true,
-            list: bootstrapers
-          },
-        },
-        dht: {
-          kBucketSize: 20
-        },
-        EXPERIMENTAL: {
-          dht: false,
-          pubsub: false
-        }
+        transport: [ws],
+        peerDiscovery: [ws.discovery],
       }
     };
 
-    super({ ...defaults, ..._options });
+    super({...defaults, ..._options});
   }
 }
 
