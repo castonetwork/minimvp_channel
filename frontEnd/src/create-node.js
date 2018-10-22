@@ -1,26 +1,13 @@
-'use strict'
-
-const PeerInfo = require('peer-info')
-const Node = require('./browser-bundle')
+const Node = require('./browser-bundle');
+const PeerInfo = require('peer-info');
 const multiaddr = require('multiaddr');
-function createNode (callback) {
+const createNode = new Promise((resolve, reject) => {
   PeerInfo.create((err, peerInfo) => {
-    if (err) {
-      return callback(err)
-    }
-
-    const peerIdStr = peerInfo.id.toB58String();
-    const ma = `/dns4/star-signal.cloud.ipfs.team/tcp/443/wss/p2p-webrtc-star/ipfs/${peerIdStr}`;
-
-    peerInfo.multiaddrs.add(ma);
+    if (err) reject(err);
     peerInfo.multiaddrs.add(multiaddr("/dns4/ws-star.discovery.libp2p.io/tcp/443/wss/p2p-websocket-star/"));
-    const node = new Node({
-      peerInfo
-    });
+    const node = new Node({peerInfo});
+    resolve(node);
+  });
+});
 
-    node.idStr = peerIdStr;
-    callback(null, node)
-  })
-}
-
-module.exports = createNode
+module.exports = createNode;
