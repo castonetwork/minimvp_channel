@@ -1,3 +1,4 @@
+const pull = require('pull-stream');
 const createNode = require("./create-node");
 const initApp = () => {
   console.log("init app");
@@ -8,12 +9,17 @@ const initApp = () => {
         const idStr = peerInfo.id.toB58String();
         console.log("Discovered: " + idStr);
         // node.dialProtocol(peerInfo, '/kitty', (err, conn) => {
-        node.dial(peerInfo, (err, conn) => {
+        node.dialProtocol(peerInfo, '/streamer', (err, conn) => {
           if (err) {
             // console.error("Failed to dial:", err);
             return;
           }
           console.log("hooray!", idStr);
+          pull(
+            conn,
+            pull.drain(o=>console.log('responsed', JSON.parse(o.toString())))
+          )
+
         });
       });
       node.on("peer:connect", peerInfo => {
