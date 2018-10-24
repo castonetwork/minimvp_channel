@@ -4,7 +4,7 @@
   "description": "P2P webRTC Proof of Concept - Channel Web Application",
   "main": "src/index.js",
   "scripts": {
-    "start": "parcel public/index.html"
+    "start": "parcel -p 8080 public/index.html"
   },
   "repository": {
     "type": "git",

@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "parcel index.html"
   },
   "author": "CASTO",
   "license": "MIT",
@@ -21,5 +21,8 @@
     "libp2p-websockets": "^0.12.0",
     "peer-info": "^0.14.1",
     "pull-stream": "^3.6.9"
+  },
+  "devDependencies": {
+    "parcel": "^1.10.3"
   }
 }

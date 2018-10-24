@@ -6,14 +6,6 @@ const streamerMetaInfo = {
   description: 'justin beiver짭퉁 방송입니다.',
   onAir: true,
 };
-const initWebServer = () => {
-  console.log("web Server Initiated");
-  require('http').createServer((req,res)=>{
-    console.log("http request");
-    res.end("<h1>Hoho</h1>");
-  }).listen(process.env.PORT || 8080);
-}
-;
 
 const initApp = () => {
   console.log("init app");
@@ -41,7 +33,6 @@ const initApp = () => {
           return;
         }
         console.log(node.peerInfo.multiaddrs.toArray().map(o => o.toString()));
-        initWebServer();
       })
     });
 };
