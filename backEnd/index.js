@@ -21,8 +21,15 @@ const initApp = () => {
           pull.values([JSON.stringify(streamerMetaInfo)]),
           conn,
           pull.map(o=>o.toString()),
-          pull.concat((err, res)=> console.log(res)),
+          pull.concat((err, res)=> console.log('first 1', res)),
         );
+
+        pull(
+          conn,
+          pull.map(o=>o.toString()),
+          pull.concat((err, res)=> console.log('second 1', res)),
+
+        )
       });
       node.on("peer:connect", peerInfo => {
         console.log('connected', peerInfo.id.toB58String())
