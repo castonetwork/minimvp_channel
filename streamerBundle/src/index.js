@@ -2,12 +2,13 @@ const Janus = require('./janus.es.js').default;
 var roomId = parseInt(document.querySelector(".roomId").value, 10);
 var sfutest = null;
 var opaqueId = "videoroomtest-"+Janus.randomString(12);
+const endPoint = "https://janus.conf.meetecho.com/janus";
 
 let init = ()=>{
     Janus.init({debug :"all", callback : function(){
         console.log("start");
         let janus = new Janus({
-            server : "ws://54.180.93.237:8188/",
+            server : endPoint,
             success : x=>{
                 console.log("success");
                 janus.attach({
@@ -113,7 +114,7 @@ let joinInit = ()=>{
     var roomId = parseInt(document.querySelector(".roomId").value, 10);
     console.log("init start");
         let janus = new Janus({
-            server : "ws://54.180.93.237:8188/",
+            server : endPoint,
             success : x=>{
                 console.log("success");
                 janus.attach({
