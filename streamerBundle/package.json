@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "parcel public/index.html --cert ~/janus-gateway/cert/mycert.pem --key ~/janus-gateway/cert/mycert.key"
+    "streamer": "parcel public/streamer.html",
+    "viewer": "parcel public/viewer.html"
   },
   "author": "CASTO",
   "license": "MIT",
