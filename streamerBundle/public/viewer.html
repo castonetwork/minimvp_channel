@@ -4,14 +4,22 @@
     <meta charset="UTF-8">
     <title>CASTO STUDIO:Viewer</title>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/6.4.0/adapter.min.js" ></script>
+    <style>
+        .video{
+            width :320px;
+            height:240px;
+        }
+    </style>
 </head>
 <body>
     <video class="video" muted autoplay></video><br>
-    <input class="name" type="text" placeholder="your broadcast Name"/><br/>
-    <input class="roomId" type="text" placeholder="your roomId Name" value="23"/><br/>
-    <input class="start-btn" type="button" value="Start Broadcast" />
-    <input class="join-btn" type="button" value="join Broadcast" />
-
+    <span class="message">Messages</span><br/>
+    <!--<input class="roomId" type="text" placeholder="your roomId Name" value="23"/><br/>-->
+    <div>
+        <span>channel list</span>
+    </div>
+    <input class="join-btn" type="button" value="Join Broadcast" />
+    <input class="leave-btn" type="button" value="Leave Broadcast" />
     <script src="../src/viewer.js"></script>
 </body>
 </html>

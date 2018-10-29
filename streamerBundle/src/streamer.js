@@ -1,26 +1,21 @@
 const Janus = require('./janus.es.js').default;
-var roomId = parseInt(document.querySelector(".roomId").value, 10);
-var sfutest = null;
 var opaqueId = "videoroomtest-"+Janus.randomString(12);
 const endPoint = "http://13.209.96.83:8088/janus";
-
+const roomId = 1;
 
 let init = ()=>{
+    
     //setting janus.Js
-    Janus.init({debug :"all", callback : ()=>{
-        Janus.log("Initiating Janus....");
-        return new Promise((res, rej)=>{
-            res();
-        });
-    }})
+    (new Promise((resolve, reject)=>{
+        Janus.init({debug :"all", callback : ()=>{
+            Janus.log("Initiating Janus....");
+            resolve();
+        }});
+    }))
     .then(()=>{
         //Connect to Janus Server....
-    })
-
-
-    //setting janus.Js
-    Janus.init({debug :"all", callback : function(){
-        Janus.log("Initiating Janus....");
+        //setting janus.Js
+        let sfutest = null;
         let janus = new Janus({
             server : endPoint,
             success : x=>{
@@ -31,12 +26,21 @@ let init = ()=>{
                     success : (pluginHandle)=>{
                         sfutest = pluginHandle;
                         Janus.log("Plugin attached! (" + sfutest.getPlugin() + ", id=" + sfutest.getId() + ")");
-                        /*sfutest.send({message:{request:"create", 
-                            room: roomId, 
-                            videocodec : "H264",
-                            audiocodec : "opus",
-                            notify_joining : true
-                        }});*/
+                        sfutest.send({
+                            message: {
+                                request:"create", 
+                                room: roomId, 
+                                videocodec : "H264",
+                                audiocodec : "opus",
+                                notify_joining : true
+                            },
+                            success : (data)=>{
+                                displayMessage("You are allocated to Room "+roomId);
+                            },
+                            error : e =>{
+                                Janus.error(e);
+                            }
+                        });    
                     },
                     error : (err)=>{
                         Janus.error(" error attaching plugin", error);
@@ -75,18 +79,32 @@ let init = ()=>{
                                         Janus.error("WebRTC error:", error);
                                     }
                                 });
+                        }else if(msg["videoroom"] === "event"){
+                            if(msg["unpublished"] !== undefined && msg["unpublished"] !== null) {
+                                // One of the publishers has unpublished?
+                                var unpublished = msg["unpublished"];
+                                Janus.log("Publisher left: " + unpublished);
+                                if(unpublished === 'ok') {
+                                    // That's us
+                                    sfutest.hangup();
+                                    sfutest.
+                                    return;
+                                }
+                            }
                         }
                         if(jsep !== undefined && jsep !== null){
                             Janus.debug("Receive Handling SDP as well...");
                             Janus.debug(jsep);
-                            sfutest.handleRemoteJsep({jsep: jsep, success : x =>{
-                                console.log("success handle remote");
-                            }, 
-                            error : e=>{
-                                console.error(e);
-                            }});
+                            sfutest.handleRemoteJsep({
+                                jsep: jsep, 
+                                success : x =>{
+                                    Janus.log(" ::: Success handle remote jesp ::: ");
+                                }, 
+                                error : e=>{
+                                    console.error(e);
+                                }
+                            });
                         }
-
                     },
                     onlocalstream : (stream)=>{
                         Janus.debug(" ::: Got a local stream :::");
@@ -102,12 +120,30 @@ let init = ()=>{
             destroyed : x=>{
                 console.log("destroyed");
             }
-        })    
-    }})
-    //add events
-    document.querySelector(".start-btn").addEventListener("click", ()=>[
-        sfutest.send({message:{request:"join", room: roomId, ptype:"publisher", id: parseInt(Math.random()*1000000, 10)}})
-    ]);
-    
+        });
+            
+        //add events
+        //start broadcast
+        document.querySelector(".start-btn").addEventListener("click", ()=>{
+            sfutest.send({message:{
+                request:"join", 
+                room: roomId, 
+                ptype:"publisher", 
+                id: parseInt(Math.random()*1000000, 10)}
+            });    
+            
+        }); 
+        //stop broadcast
+        document.querySelector(".stop-btn").addEventListener("click", ()=>{
+            sfutest.send({"message":
+                { "request": "unpublish" }
+            });
+            sfutest.send({"message":
+                { "request": "leave" }
+            });
+        }); 
+    });
+
+
 }
 init();
