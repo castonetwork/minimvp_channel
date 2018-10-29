@@ -2,10 +2,10 @@
   "name": "streaming_bundle",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
-    "start": "node index.js",
-    "web": "parcel -p 2345 index.html"
+    "start": "node ./src/index.js",
+    "web": "parcel -p 2345 ./public/index.html"
   },
   "author": "CASTO",
   "license": "MIT",
