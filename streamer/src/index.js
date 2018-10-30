@@ -12,7 +12,7 @@ const domReady = new Promise((resolve, reject) => {
       pull.values([
         JSON.stringify({
           request: "sendCreateOffer",
-          offer: offerSDP
+          offer: offerSDP.sdp
         }),
         JSON.stringify({
           request: "getAnswerOffer",
