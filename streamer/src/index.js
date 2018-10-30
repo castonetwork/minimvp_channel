@@ -10,11 +10,11 @@ const domReady = new Promise((resolve, reject) => {
   document.getElementById("btnReady").addEventListener("click", e => {
     pull(
       pull.values([
-        JSON.stringify({
+        window.JSON.stringify({
           request: "sendCreateOffer",
           offer: offerSDP.sdp
         }),
-        JSON.stringify({
+        window.JSON.stringify({
           request: "getAnswerOffer",
           offer: "xxx"
         })
@@ -27,7 +27,7 @@ const domReady = new Promise((resolve, reject) => {
 const numReqAudioTracks = 2;
 const createOffer = async () => {
   const pc = new RTCPeerConnection(null);
-  for(let i = 0 ; i < numReqAudioTracks ; i++){
+  for (let i = 0; i < numReqAudioTracks; i++) {
     const acx = new AudioContext();
     const dst = acx.createMediaStreamDestination();
 
@@ -35,25 +35,24 @@ const createOffer = async () => {
     pc.addTrack(track, dst.stream);
   }
   const offerOpts = {
-    offerToReceiveAudio : 1,
-    offerToReceiveVideo : 1,
-    iceRestart : 0,
-    voiceActivityDetection : 0
+    offerToReceiveAudio: 1,
+    offerToReceiveVideo: 1,
+    iceRestart: 0,
+    voiceActivityDetection: 0
   };
-  try{
+  try {
     const offer = await pc.createOffer(offerOpts);
     await pc.setLocalDescription(offer);
     return offer;
-  }catch(e){
+  } catch (e) {
     console.error(e);
   }
 };
 
-const initApp = async() => {
+const initApp = async () => {
   console.log("init app");
 
   offerSDP = await createOffer();
-  
 
   domReady.then(createNode).then(node => {
     console.log("node created");
