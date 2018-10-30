@@ -4,16 +4,13 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-<<<<<<< HEAD:backEnd/package.json
-    "start": "parcel index.html"
-=======
     "start": "node ./src/index.js",
     "web": "parcel -p 2345 ./public/index.html"
->>>>>>> streamerBundle_proto:streamer/package.json
   },
   "author": "CASTO",
   "license": "MIT",
   "dependencies": {
+    "babel-polyfill": "^6.26.0",
     "fastclick": "^1.0.6",
     "libp2p": "^0.23.1",
     "libp2p-bootstrap": "^0.9.3",
@@ -25,15 +22,12 @@
     "libp2p-tcp": "^0.13.0",
     "libp2p-websocket-star": "^0.9.0",
     "libp2p-websockets": "^0.12.0",
-<<<<<<< HEAD:backEnd/package.json
-    "peer-info": "^0.14.1",
-    "pull-stream": "^3.6.9"
-=======
-    "most": "^1.7.3",
     "peer-info": "^0.14.1"
->>>>>>> streamerBundle_proto:streamer/package.json
   },
   "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-runtime": "^6.26.0",
     "parcel": "^1.10.3"
   }
 }
