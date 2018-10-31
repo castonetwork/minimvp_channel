@@ -1,5 +1,5 @@
 const pull = require("pull-stream");
-const { tap } = require("pull-tap");
+const {tap} = require("pull-tap");
 const createNode = require("./create-node");
 const initMediaServer = require('./initMediaServer');
 const Pushable = require("pull-pushable");

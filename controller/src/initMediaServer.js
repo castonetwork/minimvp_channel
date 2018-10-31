@@ -2,17 +2,17 @@ const pull = require("pull-stream");
 const wsSource = require('pull-ws/source');
 const wsSink = require("pull-ws");
 const challenge = require('./challenge');
-const { tap } = require("pull-tap");
+const {tap} = require("pull-tap");
 
 module.exports = ({sendStream, socket}) => {
-// sendStream
+  // sendStream
   pull(
     sendStream,
     tap(o => console.log("sent:", o)),
     pull.map(JSON.stringify),
     wsSink(socket)
   );
-// recvStream
+  // recvStream
   pull(
     wsSource(socket),
     pull.map(o => JSON.parse(o)),
