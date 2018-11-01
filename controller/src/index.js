@@ -1,19 +1,12 @@
 const pull = require("pull-stream");
-const {tap} = require("pull-tap");
+const { tap } = require("pull-tap");
 const createNode = require("./create-node");
-const initMediaServer = require('./initMediaServer');
-const Pushable = require("pull-pushable");
-const Websocket = require("ws");
-const sendStream = Pushable();
+const MediaServer = require("./MediaServer");
 const mediaServerEndPoint = "ws://13.209.96.83:8188";
-const socket = new Websocket(mediaServerEndPoint, "janus-protocol");
 
 const initApp = async () => {
   console.log("init app");
-  initMediaServer({
-    sendStream,
-    socket
-  });
+  const ms = new MediaServer(mediaServerEndPoint);
   let node = await createNode();
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
