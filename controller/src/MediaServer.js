@@ -8,15 +8,23 @@ const Pushable = require("pull-pushable");
 
 class MediaServer {
   constructor(_wsUrl, _protocol = "janus-protocol") {
+    console.log(this);
     if (!_wsUrl) throw new Error("NO webSocket url.");
     this.sendStream = Pushable();
     this.errorStream = Pushable();
+
+    this.getSendStream = this.getSendStream.bind(this);
+    this.getErrorStream = this.getErrorStream.bind(this);
+    this.errorStreamInit = this.errorStreamInit.bind(this);
+    this.sendStreamInit = this.sendStreamInit.bind(this);
+    this.processReceiveInit = this.processReceiveInit.bind(this);
+
     this.socket = new Websocket(_wsUrl, _protocol);
     this.socket.on("error", this.errorStream.push);
     this.socket.on("open", () => {
       this.sendStreamInit();
       this.processReceiveInit();
-      this.sendStream.push(challenge.create());
+      challenge.controllerInit(this.sendStream, this.errorStream);
     });
   }
   getSendStream() {
@@ -36,8 +44,8 @@ class MediaServer {
     // sendStream
     pull(
       this.sendStream,
-      tap(o => console.log("sent:", o)),
       pull.map(JSON.stringify),
+      tap(o => console.log("[SENT]", o)),
       wsSink(this.socket)
     );
   }
@@ -46,18 +54,8 @@ class MediaServer {
     pull(
       wsSource(this.socket),
       pull.map(o => JSON.parse(o)),
-      pull.drain(o => {
-        console.log("recv:", o);
-        if (o.janus === "success") {
-          if (!o.session_id) {
-            this.sendStream.push(challenge.attach(o));
-          } else if (!o.sender) {
-            this.sendStream.push(challenge.message({ ...o, roomId: 1 }));
-          } else {
-            console.log("mediaServer initiated!");
-          }
-        }
-      })
+      tap(o => console.log("[RECV] ", o)),
+      pull.drain(challenge.receive)
     );
   }
 }
