@@ -2,14 +2,20 @@ const pull = require("pull-stream");
 const wsSource = require("pull-ws/source");
 const wsSink = require("pull-ws");
 const challenge = require("./challenge");
+const PeerHandler = require("./PeerHandler");
 const { tap } = require("pull-tap");
 const Websocket = require("ws");
 const Pushable = require("pull-pushable");
 
 class MediaServer {
-  constructor(_wsUrl, _protocol = "janus-protocol") {
+  constructor(_wsUrl, _protocol = "janus-protocol", _config) {
     console.log(this);
     if (!_wsUrl) throw new Error("NO webSocket url.");
+    this.wsUrl = _wsUrl;
+    this.protocal = _protocol;
+    this.msPeerHandler;
+    this.peers = {};
+    this.sessionId;
     this.sendStream = Pushable();
     this.errorStream = Pushable();
 
@@ -19,12 +25,14 @@ class MediaServer {
     this.sendStreamInit = this.sendStreamInit.bind(this);
     this.processReceiveInit = this.processReceiveInit.bind(this);
 
-    this.socket = new Websocket(_wsUrl, _protocol);
+    this.socket = new Websocket(this.wsUrl, this.protocal);
+    this.errorStreamInit();
     this.socket.on("error", this.errorStream.push);
     this.socket.on("open", () => {
+      this.msPeerHandler = new PeerHandler(this.sendStream, this.errorStream);
       this.sendStreamInit();
       this.processReceiveInit();
-      challenge.controllerInit(this.sendStream, this.errorStream);
+      this.msPeerHandler.init();
     });
   }
   getSendStream() {
@@ -55,7 +63,7 @@ class MediaServer {
       wsSource(this.socket),
       pull.map(o => JSON.parse(o)),
       tap(o => console.log("[RECV] ", o)),
-      pull.drain(challenge.receive)
+      pull.drain(this.msPeerHandler.receive)
     );
   }
 }

@@ -2,11 +2,14 @@ const pull = require("pull-stream");
 const { tap } = require("pull-tap");
 const createNode = require("./create-node");
 const MediaServer = require("./MediaServer");
-const mediaServerEndPoint = "ws://13.209.96.83:8188";
+const mediaServerEndPoints = [
+  "ws://13.209.96.83:8188",
+  "ws://13.209.96.83:8188"
+];
 
 const initApp = async () => {
   console.log("init app");
-  const ms = new MediaServer(mediaServerEndPoint);
+  let msList = mediaServerEndPoints.map(o => new MediaServer(o));
   let node = await createNode();
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
