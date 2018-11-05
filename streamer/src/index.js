@@ -5,12 +5,10 @@ const Pushable = require("pull-pushable");
 let sendStream = Pushable();
 
 const createNode = require("./create-node");
-let conn, offerSDP;
+let offerSDP;
 let $ = {};
 const domReady = new Promise((resolve, reject) => {
   console.log("DOM ready");
-  // send request to controller
-  pull(sendStream, pull.map(JSON.stringify), conn);
   document.getElementById("btnReady").addEventListener("click", e => {
     sendStream.push({
       request: "sendCreateOffer",
@@ -52,9 +50,11 @@ const initApp = async () => {
   domReady.then(createNode).then(node => {
     console.log("node created");
     console.log("node is ready", node.peerInfo.id.toB58String());
-    node.handle("/cast", (protocol, _conn) => {
-      conn = _conn;
+    node.handle("/cast", (protocol, conn) => {
       console.log("dialed!!");
+      // send request to controller
+      pull(sendStream, pull.map(o=>console.log(o) || JSON.stringify(o)), conn);
+
     });
     node.on("peer:connect", peerInfo => {
       console.log("connected", peerInfo.id.toB58String());
