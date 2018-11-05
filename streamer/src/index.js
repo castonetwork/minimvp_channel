@@ -53,7 +53,7 @@ const initApp = async () => {
     node.handle("/cast", (protocol, conn) => {
       console.log("dialed!!");
       // send request to controller
-      pull(sendStream, pull.map(o=>console.log(o) || JSON.stringify(o)), conn);
+      pull(sendStream, pull.map(o => JSON.stringify(o)), conn);
 
     });
     node.on("peer:connect", peerInfo => {
