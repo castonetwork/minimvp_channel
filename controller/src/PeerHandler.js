@@ -1,5 +1,5 @@
 const pull = require("pull-stream");
-const {tap} = require("pull-tap");
+const { tap } = require("pull-tap");
 const pullPromise = require("pull-promise");
 const chance = require("chance").Chance();
 
@@ -15,6 +15,7 @@ class PeerHandler {
       handleId: null,
       keepaliveTimerId: null
     };
+    this._conn;
     this._localSdp;
     this._publisherId;
     this._useVideoSimulcast = false; //config.useVideoSimulcast;
@@ -230,11 +231,11 @@ class PeerHandler {
           if ("error_code" in response.plugindata.data) {
             reject(
               "cmd:join " +
-              " code:" +
-              response.plugindata.data.error_code +
-              ":" +
-              " message:" +
-              response.plugindata.data.error
+                " code:" +
+                response.plugindata.data.error_code +
+                ":" +
+                " message:" +
+                response.plugindata.data.error
             );
           } else {
             if ("jsep" in response) {
@@ -301,8 +302,8 @@ class PeerHandler {
           if ("error_code" in response.plugindata.data) {
             reject(
               response.plugindata.data.error_code +
-              ":" +
-              response.plugindata.data.error
+                ":" +
+                response.plugindata.data.error
             );
           } else {
             let _sdp;

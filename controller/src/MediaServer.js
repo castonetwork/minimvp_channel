@@ -70,16 +70,17 @@ class MediaServer {
           pullPromise.source(
             this.msPeerHandler._configure(jsep.type, jsep.sdp)
           ),
-          pull.drain(o => {
-            console.log("sendCreateOffer ", o);
-          })
+          pull.map(JSON.stringify),
+          tap(o => console.log),
+          this.msPeerHandler._conn
         );
       }
     };
     events[event.request] && events[event.request](event);
   }
-  assignPeer(peerId) {
+  assignPeer(peerId, conn) {
     // from handleIdpool.
+    this.msPeerHandler._conn = conn;
     this.peers[peerId] = this.msPeerHandler;
   }
 }

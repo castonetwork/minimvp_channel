@@ -52,9 +52,14 @@ const initApp = async () => {
     console.log("node is ready", node.peerInfo.id.toB58String());
     node.handle("/cast", (protocol, conn) => {
       console.log("dialed!!");
-      // send request to controller
       pull(sendStream, pull.map(o => JSON.stringify(o)), conn);
-
+      pull(
+        conn,
+        pull.map(o => window.JSON.stringify(o.toString())),
+        pull.drain(o => {
+          console.log("GET ANSWER? ", o);
+        })
+      );
     });
     node.on("peer:connect", peerInfo => {
       console.log("connected", peerInfo.id.toB58String());

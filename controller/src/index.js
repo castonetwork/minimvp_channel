@@ -19,7 +19,7 @@ const initApp = async () => {
         // console.error("Failed to dial:", err);
         return;
       }
-      msNode.assignPeer(idStr);
+      msNode.assignPeer(idStr, conn);
       pull(
         conn,
         pull.map(o => JSON.parse(o.toString())),
