@@ -1,7 +1,9 @@
 const pull = require("pull-stream");
 const { tap } = require("pull-tap");
 const pullPromise = require("pull-promise");
-const guid = require("chance").guid;
+const chance = require('chance').Chance()
+
+
 
 class PeerHandler {
   constructor(_sendStream, _errorStream) {
@@ -52,7 +54,7 @@ class PeerHandler {
     );
   }
   _createSession() {
-    let tId = guid();
+    let tId = chance.guid();
     let request = {
       janus: "create",
       transaction: tId
@@ -79,7 +81,7 @@ class PeerHandler {
   }
 
   _attach() {
-    let tId = guid();
+    let tId = chance.guid();
     let request = {
       janus: "attach",
       session_id: this._sessionId,
@@ -110,7 +112,7 @@ class PeerHandler {
         janus: "keepalive",
         session_id: this._sessionId,
         handle_id: id,
-        transaction: guid()
+        transaction: chance.guid()
       };
       this._sendStream.push(msg);
     }, 30000);
@@ -118,7 +120,7 @@ class PeerHandler {
     return timerId;
   }
   createRoom(config) {
-    let tId = guid();
+    let tId = chance.guid();
     let request = {
       janus: "message",
       session_id: this._sessionId,
