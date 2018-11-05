@@ -1,9 +1,7 @@
 const pull = require("pull-stream");
 const { tap } = require("pull-tap");
 const pullPromise = require("pull-promise");
-const chance = require('chance').Chance()
-
-
+const chance = require("chance").Chance();
 
 class PeerHandler {
   constructor(_sendStream, _errorStream) {
@@ -17,6 +15,7 @@ class PeerHandler {
       handleId: null,
       keepaliveTimerId: null
     };
+    this._localSdp;
     this._publisherId;
     this._useVideoSimulcast = false; //config.useVideoSimulcast;
     this._plugin =
@@ -35,22 +34,13 @@ class PeerHandler {
     return pull(
       pullPromise.source(this._createSession()),
       pullPromise.through(o => this._attach()),
-      pull.map(
-        id => {
-          this._handleId = id;
-          this._keepaliveTimerId = this._startKeepAlive(this._handleId)
-        }
-      ),
-      pull.drain(o => console.log("Success Controller Attach to JANUS!"))
-    );
-  }
-  addPeer(peerInfo) {
-    return pull(
-      pullPromise.source(this._attach()),
-      pull.map( o=>{
-        peers.push(new PeerHandler(this._sendStream, this._errorStream,{}));
+      pull.map(id => {
+        this._handleId = id;
+        this._keepaliveTimerId = this._startKeepAlive(this._handleId);
       }),
-      pull.drain(o => console.log("Success to add newPeer!"))
+      pullPromise.through(o => this.createRoom()),
+      pullPromise.through(roomId => this._join()),
+      pull.drain(o => console.log("Success Controller Attach to JANUS!"))
     );
   }
   _createSession() {
@@ -119,7 +109,7 @@ class PeerHandler {
 
     return timerId;
   }
-  createRoom(config) {
+  createRoom() {
     let tId = chance.guid();
     let request = {
       janus: "message",
@@ -134,9 +124,9 @@ class PeerHandler {
         request: "create",
         description: "remon",
         //   transaction: tId,
-        bitrate: config.bandwidth,
+        bitrate: 5242880,
         publishers: 1,
-        fir_freq: config.firFreq,
+        fir_freq: 1,
         is_private: false,
         audiocodec: "opus",
         videocodec: "H264",
@@ -200,6 +190,133 @@ class PeerHandler {
       };
     });
   }
+  /**
+   * join 메시지를 janus 서버로 전송한다.
+   * @param {Peer} peer
+   * @returns {Promise}
+   */
+  _join() {
+    let handleId = this._handleId;
+    let tId = chance.guid();
+
+    let request = {
+      janus: "message",
+      session_id: this._sessionId,
+      handle_id: handleId,
+      transaction: tId,
+      body: {
+        request: "join",
+        room: this._room.id,
+        ptype: "publisher", // : "listener",
+        video: true,
+        audio: true
+      }
+    };
+
+    this._sendStream.push(request);
+
+    return new Promise((resolve, reject) => {
+      transactionQueue[tId] = {
+        id: tId,
+        ack: response => {
+          return false;
+        },
+        event: response => {
+          if ("error_code" in response.plugindata.data) {
+            reject(
+              "cmd:join " +
+                " code:" +
+                response.plugindata.data.error_code +
+                ":" +
+                " message:" +
+                response.plugindata.data.error
+            );
+          } else {
+            if ("jsep" in response) {
+              response.jsep.sdp;
+            }
+
+            resolve();
+          }
+          return true;
+        },
+        failure: response => {
+          reject("cmd:join response:" + response.janus);
+          return true;
+        }
+      };
+    });
+  }
+
+  /**
+   * configure 메시지를 janus 서버로 전송
+   * local SDP를 얻어오기 위해 사용한다.
+   * @param {Peer} peer
+   * @param {String} sdpType
+   * @param {Strinf} sdp
+   * @returns {Promise}
+   */
+  _configure(sdpType, sdp) {
+    let tId = chance.guid();
+
+    let handleId = this._handleId;
+
+    let request = {
+      janus: "message",
+      session_id: this._sessionId,
+      handle_id: handleId,
+      transaction: tId,
+      body: {
+        request: "configure",
+        room: this._room.id,
+        ptype: "publisher",
+        video: true,
+        audio: true
+      }
+    };
+
+    if (sdp) {
+      request.jsep = {
+        type: sdpType,
+        sdp: sdp
+      };
+    }
+
+    this._sendStream.push(request);
+
+    return new Promise((resolve, reject) => {
+      transactionQueue[tId] = {
+        id: tId,
+        ack: response => {
+          return false;
+        },
+        event: response => {
+          let handleId = response.sender;
+
+          if ("error_code" in response.plugindata.data) {
+            reject(
+              response.plugindata.data.error_code +
+                ":" +
+                response.plugindata.data.error
+            );
+          } else {
+            let _sdp;
+            if ("jsep" in response) {
+              _sdp = response.jsep.sdp;
+              this._localSdp = response.jsep.sdp;
+            }
+            resolve(_sdp);
+          }
+          return true;
+        },
+        failure: response => {
+          reject();
+          return true;
+        }
+      };
+    });
+  }
+
   receive(o) {
     if ("transaction" in o) {
       let tId = o.transaction;
@@ -220,26 +337,6 @@ class PeerHandler {
       }
       return;
     }
-  }
-  configure(o) {
-    this._sendStream.push({
-      "janus": "message",
-      "body": {
-        "request": "configure",
-        "audio": true,
-        "video": true,
-        "videocodec": "H264",
-        "audiocodec": "opus",
-        "display": "pub"
-      },
-      "transaction": "Yp6VUWlaLGie",
-      "jsep": {
-        "type": "offer",
-        "sdp": o.offer
-      },
-      "session_id": this._sessionId,
-      "handle_id": this._handleId
-    });
   }
 }
 

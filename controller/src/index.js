@@ -2,13 +2,11 @@ const pull = require("pull-stream");
 const { tap } = require("pull-tap");
 const createNode = require("./create-node");
 const MediaServer = require("./MediaServer");
-const mediaServerEndPoints = [
-  "ws://13.209.96.83:8188"
-];
+const mediaServerEndPoints = ["ws://13.209.96.83:8188"];
 
 const initApp = async () => {
   console.log("init app");
-  let msNode = new MediaServer(o);
+  let msNode = new MediaServer(mediaServerEndPoints[0]);
   let node = await createNode();
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
@@ -21,9 +19,11 @@ const initApp = async () => {
         // console.error("Failed to dial:", err);
         return;
       }
+      msNode.assignPeer(idStr);
       pull(
         conn,
         pull.map(o => JSON.parse(o.toString())),
+        tap(console.log),
         tap(msNode.processStreamerEvent),
         pull.log()
       );

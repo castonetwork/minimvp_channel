@@ -10,15 +10,11 @@ let $ = {};
 const domReady = new Promise((resolve, reject) => {
   console.log("DOM ready");
   // send request to controller
-  pull(
-    sendStream,
-    pull.map(JSON.stringify),
-    conn
-  );
+  pull(sendStream, pull.map(JSON.stringify), conn);
   document.getElementById("btnReady").addEventListener("click", e => {
     sendStream.push({
       request: "sendCreateOffer",
-      offer: offerSDP.sdp
+      jsep: offerSDP
     });
   });
   resolve();

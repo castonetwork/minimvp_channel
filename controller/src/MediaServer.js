@@ -2,7 +2,7 @@ const pull = require("pull-stream");
 const wsSource = require("pull-ws/source");
 const wsSink = require("pull-ws");
 const PeerHandler = require("./PeerHandler");
-const {tap} = require("pull-tap");
+const { tap } = require("pull-tap");
 const Websocket = require("ws");
 const Pushable = require("pull-pushable");
 
@@ -18,8 +18,6 @@ class MediaServer {
     this.sendStream = Pushable();
     this.errorStream = Pushable();
 
-    this.getSendStream = this.getSendStream.bind(this);
-    this.getErrorStream = this.getErrorStream.bind(this);
     this.errorStreamInit = this.errorStreamInit.bind(this);
     this.sendStreamInit = this.sendStreamInit.bind(this);
     this.processReceiveInit = this.processReceiveInit.bind(this);
@@ -34,15 +32,6 @@ class MediaServer {
       this.msPeerHandler.init();
     });
   }
-
-  getSendStream() {
-    return this.sendStream;
-  }
-
-  getErrorStream() {
-    return this.errorStream;
-  }
-
   errorStreamInit() {
     pull(
       this.errorStream,
@@ -73,9 +62,22 @@ class MediaServer {
 
   processStreamerEvent(event) {
     const events = {
-      "sendCreateOffer": this.msPeerHandler.configure
+      sendCreateOffer: ({ jsep }) => {
+        pull(
+          pullPromise.source(
+            this.msPeerHandler._configure(jsep.type, jsep.sdp)
+          ),
+          pull.drain(o => {
+            console.log("sendCreateOffer ", o);
+          })
+        );
+      }
     };
     events[event.request] && events[event.request](event);
+  }
+  assignPeer(peerId) {
+    // from handleIdpool.
+    this.peers[peerId] = this.msPeerHandler;
   }
 }
 
