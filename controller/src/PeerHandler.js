@@ -1,6 +1,7 @@
 const pull = require("pull-stream");
 const { tap } = require("pull-tap");
 const pullPromise = require("pull-promise");
+const guid = require("chance").guid;
 
 class PeerHandler {
   constructor(_sendStream, _errorStream) {
@@ -23,7 +24,6 @@ class PeerHandler {
         : "janus.plugin.streaming";
     this.transactionQueue = {};
     this.init = this.init.bind(this);
-    this.randomString = this.randomString.bind(this);
     this._createSession = this._createSession.bind(this);
     this._attach = this._attach.bind(this);
     this._startKeepAlive = this._startKeepAlive.bind(this);
@@ -34,25 +34,25 @@ class PeerHandler {
       pullPromise.source(this._createSession()),
       pullPromise.through(o => this._attach()),
       pull.map(
-        o => (this._keepaliveTimerId = this._startKeepAlive(this._handleId))
+        id => {
+          this._handleId = id;
+          this._keepaliveTimerId = this._startKeepAlive(this._handleId)
+        }
       ),
       pull.drain(o => console.log("Success Controller Attach to JANUS!"))
     );
   }
-
-  randomString(len) {
-    var charSet =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    var randomString = "";
-    for (var i = 0; i < len; i++) {
-      var randomPoz = Math.floor(Math.random() * charSet.length);
-      randomString += charSet.substring(randomPoz, randomPoz + 1);
-    }
-    return randomString;
+  addPeer(peerInfo) {
+    return pull(
+      pullPromise.source(this._attach()),
+      pull.map( o=>{
+        peers.push(new PeerHandler(this._sendStream, this._errorStream,{}));
+      }),
+      pull.drain(o => console.log("Success to add newPeer!"))
+    );
   }
-
   _createSession() {
-    let tId = this.randomString(12);
+    let tId = guid();
     let request = {
       janus: "create",
       transaction: tId
@@ -79,7 +79,7 @@ class PeerHandler {
   }
 
   _attach() {
-    let tId = this.randomString(12);
+    let tId = guid();
     let request = {
       janus: "attach",
       session_id: this._sessionId,
@@ -93,8 +93,7 @@ class PeerHandler {
         success: response => {
           //logger.debug('attch: id=' + response.data.id);
           console.log("attch: id=" + response.data.id);
-          this._handleId = response.data.id;
-          resolve();
+          resolve(response.data.id);
           return true;
         },
         failure: response => {
@@ -111,14 +110,94 @@ class PeerHandler {
         janus: "keepalive",
         session_id: this._sessionId,
         handle_id: id,
-        transaction: this.randomString(12)
+        transaction: guid()
       };
       this._sendStream.push(msg);
     }, 30000);
 
     return timerId;
   }
+  createRoom(config) {
+    let tId = guid();
+    let request = {
+      janus: "message",
+      session_id: this._sessionId,
+      handle_id: this._handleId,
+      transaction: tId,
+      request: {}
+    };
 
+    if (this._plugin === "janus.plugin.videoroom") {
+      request.body = {
+        request: "create",
+        description: "remon",
+        //   transaction: tId,
+        bitrate: config.bandwidth,
+        publishers: 1,
+        fir_freq: config.firFreq,
+        is_private: false,
+        audiocodec: "opus",
+        videocodec: "H264",
+        video: true,
+        audio: true,
+        notify_joining: true,
+        playoutdelay_ext: false,
+        videoorient_ext: false
+      };
+      if (this._useVideoSimulcast === true) {
+        request.body.videocodec = "VP8";
+      }
+    } else {
+      // this._plugin === "janus.plugin.streaming"
+      request.body = {
+        request: "create",
+        type: "rtp",
+        id: 1,
+        is_private: false,
+        audio: true,
+        video: true,
+        audiopt: 111,
+        audioport: 50000,
+        audiortpmap: "opus/48000/2",
+        videopt: 100,
+        videoport: 50002,
+        videoskew: false,
+        videortpmap: "H264/90000",
+        videofmtp: "profile-level-id=42e01f;packetization-mode=1",
+        videosimulcast: false
+      };
+
+      if (this._useVideoSimulcast === true) {
+        request.body.videoport2 = 50004;
+        request.body.videoport3 = 50006;
+        request.body.videortpmap = "VP8/90000";
+        request.body.videofmtp = "";
+        request.body.videosimulcast = true;
+      }
+    }
+
+    this._sendStream.push(request);
+
+    return new Promise((resolve, reject) => {
+      this.transactionQueue[tId] = {
+        id: tId,
+        success: response => {
+          if (this._plugin === "janus.plugin.videoroom") {
+            this._room.id = response.plugindata.data.room;
+          } else {
+            // this._plugin === "janus.plugin.streaming"
+            this._room.id = response.plugindata.data.stream.id;
+          }
+          resolve(this._room.id);
+          return true;
+        },
+        failure: response => {
+          this._errorStream.push(response.error.reason);
+          return true;
+        }
+      };
+    });
+  }
   receive(o) {
     if ("transaction" in o) {
       let tId = o.transaction;

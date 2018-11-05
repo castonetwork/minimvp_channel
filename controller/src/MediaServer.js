@@ -1,7 +1,6 @@
 const pull = require("pull-stream");
 const wsSource = require("pull-ws/source");
 const wsSink = require("pull-ws");
-const challenge = require("./challenge");
 const PeerHandler = require("./PeerHandler");
 const { tap } = require("pull-tap");
 const Websocket = require("ws");

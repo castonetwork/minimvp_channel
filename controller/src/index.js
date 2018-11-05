@@ -3,7 +3,6 @@ const { tap } = require("pull-tap");
 const createNode = require("./create-node");
 const MediaServer = require("./MediaServer");
 const mediaServerEndPoints = [
-  "ws://13.209.96.83:8188",
   "ws://13.209.96.83:8188"
 ];
 
