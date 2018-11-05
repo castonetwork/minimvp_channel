@@ -23,7 +23,8 @@ class MediaServer {
     this.sendStreamInit = this.sendStreamInit.bind(this);
     this.processReceiveInit = this.processReceiveInit.bind(this);
     this.assignPeer = this.assignPeer.bind(this);
-    
+    this.processStreamerEvent = this.processStreamerEvent.bind(this);
+
     this.socket = new Websocket(this.wsUrl, this.protocal);
     this.errorStreamInit();
     this.socket.on("error", this.errorStream.push);

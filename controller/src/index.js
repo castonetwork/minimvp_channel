@@ -13,7 +13,7 @@ const initApp = async () => {
 
   node.on("peer:discovery", peerInfo => {
     const idStr = peerInfo.id.toB58String();
-    console.log("Discovered: " + idStr);
+    // console.log("Discovered: " + idStr);
     node.dialProtocol(peerInfo, "/cast", (err, conn) => {
       if (err) {
         // console.error("Failed to dial:", err);

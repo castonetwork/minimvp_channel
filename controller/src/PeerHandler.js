@@ -1,5 +1,5 @@
 const pull = require("pull-stream");
-const { tap } = require("pull-tap");
+const {tap} = require("pull-tap");
 const pullPromise = require("pull-promise");
 const chance = require("chance").Chance();
 
@@ -30,6 +30,7 @@ class PeerHandler {
     this._startKeepAlive = this._startKeepAlive.bind(this);
     this.receive = this.receive.bind(this);
   }
+
   init() {
     return pull(
       pullPromise.source(this._createSession()),
@@ -43,6 +44,7 @@ class PeerHandler {
       pull.drain(o => console.log("Success Controller Attach to JANUS!"))
     );
   }
+
   _createSession() {
     let tId = chance.guid();
     let request = {
@@ -96,6 +98,7 @@ class PeerHandler {
       };
     });
   }
+
   _startKeepAlive(id) {
     let timerId = setInterval(() => {
       let msg = {
@@ -109,6 +112,7 @@ class PeerHandler {
 
     return timerId;
   }
+
   createRoom() {
     let tId = chance.guid();
     let request = {
@@ -190,6 +194,7 @@ class PeerHandler {
       };
     });
   }
+
   /**
    * join 메시지를 janus 서버로 전송한다.
    * @param {Peer} peer
@@ -225,11 +230,11 @@ class PeerHandler {
           if ("error_code" in response.plugindata.data) {
             reject(
               "cmd:join " +
-                " code:" +
-                response.plugindata.data.error_code +
-                ":" +
-                " message:" +
-                response.plugindata.data.error
+              " code:" +
+              response.plugindata.data.error_code +
+              ":" +
+              " message:" +
+              response.plugindata.data.error
             );
           } else {
             if ("jsep" in response) {
@@ -296,8 +301,8 @@ class PeerHandler {
           if ("error_code" in response.plugindata.data) {
             reject(
               response.plugindata.data.error_code +
-                ":" +
-                response.plugindata.data.error
+              ":" +
+              response.plugindata.data.error
             );
           } else {
             let _sdp;
