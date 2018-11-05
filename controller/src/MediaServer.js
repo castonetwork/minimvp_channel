@@ -4,6 +4,7 @@ const wsSink = require("pull-ws");
 const PeerHandler = require("./PeerHandler");
 const { tap } = require("pull-tap");
 const Websocket = require("ws");
+const pullPromise = require("pull-promise");
 const Pushable = require("pull-pushable");
 
 class MediaServer {
@@ -21,7 +22,8 @@ class MediaServer {
     this.errorStreamInit = this.errorStreamInit.bind(this);
     this.sendStreamInit = this.sendStreamInit.bind(this);
     this.processReceiveInit = this.processReceiveInit.bind(this);
-
+    this.assignPeer = this.assignPeer.bind(this);
+    
     this.socket = new Websocket(this.wsUrl, this.protocal);
     this.errorStreamInit();
     this.socket.on("error", this.errorStream.push);

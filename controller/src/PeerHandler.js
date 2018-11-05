@@ -216,7 +216,7 @@ class PeerHandler {
     this._sendStream.push(request);
 
     return new Promise((resolve, reject) => {
-      transactionQueue[tId] = {
+      this.transactionQueue[tId] = {
         id: tId,
         ack: response => {
           return false;
@@ -285,7 +285,7 @@ class PeerHandler {
     this._sendStream.push(request);
 
     return new Promise((resolve, reject) => {
-      transactionQueue[tId] = {
+      this.transactionQueue[tId] = {
         id: tId,
         ack: response => {
           return false;
