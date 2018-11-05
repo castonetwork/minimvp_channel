@@ -4,7 +4,6 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-    "start": "node ./src/index.js",
     "web": "parcel -p 2345 ./public/index.html"
   },
   "author": "CASTO",
