@@ -1,26 +1,25 @@
 import "babel-polyfill";
 
 const pull = require("pull-stream");
+const Pushable = require("pull-pushable");
+let sendStream = Pushable();
 
 const createNode = require("./create-node");
 let conn, offerSDP;
 let $ = {};
 const domReady = new Promise((resolve, reject) => {
   console.log("DOM ready");
+  // send request to controller
+  pull(
+    sendStream,
+    pull.map(JSON.stringify),
+    conn
+  );
   document.getElementById("btnReady").addEventListener("click", e => {
-    pull(
-      pull.values([
-        window.JSON.stringify({
-          request: "sendCreateOffer",
-          offer: offerSDP.sdp
-        }),
-        window.JSON.stringify({
-          request: "getAnswerOffer",
-          offer: "xxx"
-        })
-      ]),
-      conn
-    );
+    sendStream.push({
+      request: "sendCreateOffer",
+      offer: offerSDP.sdp
+    });
   });
   resolve();
 });
@@ -70,8 +69,6 @@ const initApp = async () => {
         return;
       }
       console.log(node.peerInfo.multiaddrs.toArray().map(o => o.toString()));
-
-      $.startEvent;
     });
   });
 };

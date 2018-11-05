@@ -8,7 +8,7 @@ const mediaServerEndPoints = [
 
 const initApp = async () => {
   console.log("init app");
-  let msList = mediaServerEndPoints.map(o => new MediaServer(o));
+  let msNode = new MediaServer(o);
   let node = await createNode();
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
@@ -24,13 +24,8 @@ const initApp = async () => {
       pull(
         conn,
         pull.map(o => JSON.parse(o.toString())),
-        tap(o => {
-          if (o.request === "getAnswerOffer") {
-            console.log("getAnswerOffer");
-            console.log(o);
-          }
-        }),
-        pull.drain(x => {})
+        tap(msNode.processStreamerEvent),
+        pull.log()
       );
     });
   });

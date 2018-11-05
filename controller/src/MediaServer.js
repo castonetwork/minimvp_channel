@@ -2,7 +2,7 @@ const pull = require("pull-stream");
 const wsSource = require("pull-ws/source");
 const wsSink = require("pull-ws");
 const PeerHandler = require("./PeerHandler");
-const { tap } = require("pull-tap");
+const {tap} = require("pull-tap");
 const Websocket = require("ws");
 const Pushable = require("pull-pushable");
 
@@ -34,12 +34,15 @@ class MediaServer {
       this.msPeerHandler.init();
     });
   }
+
   getSendStream() {
     return this.sendStream;
   }
+
   getErrorStream() {
     return this.errorStream;
   }
+
   errorStreamInit() {
     pull(
       this.errorStream,
@@ -47,6 +50,7 @@ class MediaServer {
       pull.drain(o => console.error("[ERROR] ", o))
     );
   }
+
   sendStreamInit() {
     // sendStream
     pull(
@@ -56,6 +60,7 @@ class MediaServer {
       wsSink(this.socket)
     );
   }
+
   processReceiveInit() {
     //recvStream
     pull(
@@ -64,6 +69,13 @@ class MediaServer {
       tap(o => console.log("[RECV] ", o)),
       pull.drain(this.msPeerHandler.receive)
     );
+  }
+
+  processStreamerEvent(event) {
+    const events = {
+      "sendCreateOffer": this.msPeerHandler.configure
+    };
+    events[event.request] && events[event.request](event);
   }
 }
 

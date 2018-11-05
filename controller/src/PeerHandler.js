@@ -221,6 +221,26 @@ class PeerHandler {
       return;
     }
   }
+  configure(o) {
+    this._sendStream.push({
+      "janus": "message",
+      "body": {
+        "request": "configure",
+        "audio": true,
+        "video": true,
+        "videocodec": "H264",
+        "audiocodec": "opus",
+        "display": "pub"
+      },
+      "transaction": "Yp6VUWlaLGie",
+      "jsep": {
+        "type": "offer",
+        "sdp": o.offer
+      },
+      "session_id": this._sessionId,
+      "handle_id": this._handleId
+    });
+  }
 }
 
 module.exports = PeerHandler;
