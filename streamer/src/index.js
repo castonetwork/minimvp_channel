@@ -8,61 +8,63 @@ const createNode = require("./create-node");
 
 let $ = {};
 const domReady = new Promise((resolve, reject) => {
-    console.log("DOM ready");
-    document.getElementById("btnReady").addEventListener("click", async e => {
-      pc = new RTCPeerConnection({
-        iceServers: [
-          {urls: "stun:stun.l.google.com:19302"},
-          {urls: "stun:stun1.l.google.com:19302"},
-          {urls: "stun:stun2.l.google.com:19302"},
-          {urls: "stun:stun3.l.google.com:19302"},
-          {urls: "stun:stun4.l.google.com:19302"},
-          {urls: "stun:stun.ekiga.net"},
-          {urls: "stun:stun.ideasip.com"},
-          {urls: "stun:stun.rixtelecom.se"},
-          {urls: "stun:stun.schlund.de"}
-        ]
+  console.log("DOM ready");
+  document.getElementById("btnReady").addEventListener("click", async e => {
+    pc = new RTCPeerConnection({
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
+        { urls: "stun:stun3.l.google.com:19302" },
+        { urls: "stun:stun4.l.google.com:19302" },
+        { urls: "stun:stun.ekiga.net" },
+        { urls: "stun:stun.ideasip.com" },
+        { urls: "stun:stun.rixtelecom.se" },
+        { urls: "stun:stun.schlund.de" }
+      ]
+    });
+
+    // send any ice candidates to the other peer
+    pc.onicecandidate = event => {
+      console.log("[ICE]", event);
+      if (event.candidate) {
+        sendStream.push({
+          request: "sendTrickleCandidate",
+          candidate: event.candidate
+        });
+      }
+    };
+    pc.oniceconnectionstatechange = function(e) {
+      console.log("[ICE STATUS] ", pc.iceConnectionState);
+    };
+
+    // let the "negotiationneeded" event trigger offer generation
+    pc.onnegotiationneeded = async () => {};
+
+    try {
+      // get a local stream, show it in a self-view and add it to be sent
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true
       });
-
-      // send any ice candidates to the other peer
-      pc.onicecandidate = event => {
-        console.log("[ICE]", event)
-      };
-
-      // let the "negotiationneeded" event trigger offer generation
-      pc.onnegotiationneeded = async () => {
-      };
-
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+      document.getElementById("studio").srcObject = stream;
       try {
-        // get a local stream, show it in a self-view and add it to be sent
-        const stream = await
-          navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: true
-          });
-        stream.getTracks().forEach(track => pc.addTrack(track, stream));
-        document.getElementById("studio").srcObject = stream;
-        try {
-          await
-            pc.setLocalDescription(await
-              pc.createOffer()
-            )
-          ;
-          console.log("localDescription", pc.localDescription);
-          sendStream.push({
-            request: "sendCreateOffer",
-            jsep: pc.localDescription
-          });
-        } catch (err) {
-          console.error(err);
-        }
+        await pc.setLocalDescription(await pc.createOffer());
+        console.log("localDescription", pc.localDescription);
+        sendStream.push({
+          request: "sendCreateOffer",
+          jsep: pc.localDescription
+        });
       } catch (err) {
         console.error(err);
       }
-    });
-    resolve();
-  })
-;
+    } catch (err) {
+      console.error(err);
+    }
+  });
+  resolve();
+});
 
 const initApp = async () => {
   console.log("init app");
@@ -79,7 +81,7 @@ const initApp = async () => {
         pull.map(o => window.JSON.parse(o.toString())),
         pull.drain(o => {
           const controllerResponse = {
-            "answer": async desc => {
+            answer: async desc => {
               console.log("controller answered", desc);
               await pc.setRemoteDescription(desc);
             }

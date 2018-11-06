@@ -74,6 +74,17 @@ class MediaServer {
           tap(o => console.log),
           this.msPeerHandler._conn
         );
+      },
+      sendTrickleCandidate: ({ candidate }) => {
+        pull(
+          pullPromise.source(this.msPeerHandler.addIceCandidate(candidate)),
+          pull.map(JSON.stringify),
+          tap(o => console.log),
+          pull.drain(o => {
+            console.log("Send TrickleCandidate");
+          })
+          //this.msPeerHandler._conn
+        );
       }
     };
     events[event.request] && events[event.request](event);

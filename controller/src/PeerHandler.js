@@ -322,6 +322,42 @@ class PeerHandler {
       };
     });
   }
+  /**
+   * ICE candidate를 janus로 전송한다.
+   * janus로 trickle 메시지 전송
+   * @param {Peer} peer
+   * @param {String} sdpMid
+   * @param {String} sdpMLineIndex
+   * @param {String} candidate
+   * @returns {Promise}
+   */
+  addIceCandidate(candidates) {
+    const { sdpMid, sdpMLineIndex, candidate } = candidates;
+    let tId = chance.guid();
+    let handleId = this._handleId;
+
+    let request = {
+      janus: "trickle",
+      session_id: this._sessionId,
+      handle_id: handleId,
+      transaction: tId,
+      candidate: {
+        sdpMid: sdpMid,
+        sdpMLineIndex: sdpMLineIndex,
+        candidate: candidate
+      }
+    };
+
+    this._sendStream.push(request);
+    return new Promise((resolve, reject) => {
+      this.transactionQueue[tId] = {
+        id: tId,
+        ack: response => {
+          return true;
+        }
+      };
+    });
+  }
 
   receive(o) {
     if ("transaction" in o) {
