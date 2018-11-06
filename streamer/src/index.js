@@ -8,44 +8,61 @@ const createNode = require("./create-node");
 
 let $ = {};
 const domReady = new Promise((resolve, reject) => {
-  console.log("DOM ready");
-  document.getElementById("btnReady").addEventListener("click", async e => {
-    pc = new RTCPeerConnection({});
+    console.log("DOM ready");
+    document.getElementById("btnReady").addEventListener("click", async e => {
+      pc = new RTCPeerConnection({
+        iceServers: [
+          {urls: "stun:stun.l.google.com:19302"},
+          {urls: "stun:stun1.l.google.com:19302"},
+          {urls: "stun:stun2.l.google.com:19302"},
+          {urls: "stun:stun3.l.google.com:19302"},
+          {urls: "stun:stun4.l.google.com:19302"},
+          {urls: "stun:stun.ekiga.net"},
+          {urls: "stun:stun.ideasip.com"},
+          {urls: "stun:stun.rixtelecom.se"},
+          {urls: "stun:stun.schlund.de"}
+        ]
+      });
 
-    // send any ice candidates to the other peer
-    pc.onicecandidate = event => {
-      //sendStream.push(JSON.stringify({candidate: event.candidate}))
-    };
+      // send any ice candidates to the other peer
+      pc.onicecandidate = event => {
+        console.log("[ICE]", event)
+      };
 
-    // let the "negotiationneeded" event trigger offer generation
-    pc.onnegotiationneeded = async () => {
+      // let the "negotiationneeded" event trigger offer generation
+      pc.onnegotiationneeded = async () => {
+      };
+
       try {
-        await pc.setLocalDescription(await pc.createOffer());
-        // send the offer to the other peer
-        //sendStream.push(JSON.stringify({desc: pc.localDescription}));
-        sendStream.push({
-          request: "sendCreateOffer",
-          jsep: pc.localDescription
-        });
+        // get a local stream, show it in a self-view and add it to be sent
+        const stream = await
+          navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: true
+          });
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+        document.getElementById("studio").srcObject = stream;
+        try {
+          await
+            pc.setLocalDescription(await
+              pc.createOffer()
+            )
+          ;
+          console.log("localDescription", pc.localDescription);
+          sendStream.push({
+            request: "sendCreateOffer",
+            jsep: pc.localDescription
+          });
+        } catch (err) {
+          console.error(err);
+        }
       } catch (err) {
         console.error(err);
       }
-    };
-
-    try {
-      // get a local stream, show it in a self-view and add it to be sent
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: true
-      });
-      stream.getTracks().forEach(track => pc.addTrack(track, stream));
-      document.getElementById("studio").srcObject = stream;
-    } catch (err) {
-      console.erro(err);
-    }
-  });
-  resolve();
-});
+    });
+    resolve();
+  })
+;
 
 const initApp = async () => {
   console.log("init app");
@@ -53,14 +70,21 @@ const initApp = async () => {
     console.log("node created");
     console.log("node is ready", node.peerInfo.id.toB58String());
     node.handle("/cast", (protocol, conn) => {
+      document.getElementById("btnReady").classList.remove("connecting");
+      document.getElementById("btnReady").classList.remove("button-outline");
       console.log("dialed!!");
       pull(sendStream, pull.map(o => JSON.stringify(o)), conn);
       pull(
         conn,
-        pull.map(o => window.JSON.stringify(o.toString())),
+        pull.map(o => window.JSON.parse(o.toString())),
         pull.drain(o => {
-          console.log("GET ANSWER? ", o);
-          //await pc.setRemoteDescription(desc);
+          const controllerResponse = {
+            "answer": async desc => {
+              console.log("controller answered", desc);
+              await pc.setRemoteDescription(desc);
+            }
+          };
+          controllerResponse[o.type] && controllerResponse[o.type](o);
         })
       );
     });
