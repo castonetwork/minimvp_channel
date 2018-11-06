@@ -1,4 +1,6 @@
 const pull = require('pull-stream');
+const Pushable = require('pull-stream');
+let sendController = Pushable();
 window.pull = pull;
 const createNode = require("./create-node");
 const updateChannelInfo = info => {
@@ -35,10 +37,16 @@ const initApp = () => {
             return;
           }
           pull(
+            sendController,
+            pull.map(JSON.stringify),
             conn,
             processEvents,
             pull.log()
-          )
+          );
+          sendController.push({
+            type: "channelRegister",
+            idStr: idStr
+          });
         });
       });
       node.on("peer:connect", peerInfo => {
