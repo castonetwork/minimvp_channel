@@ -9,7 +9,6 @@ let sendChannel = Pushable();
 
 const initApp = async () => {
   console.log("init app");
-  let msNode = new MediaServer(mediaServerEndPoints[0]);
   let node = await createNode();
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
@@ -29,15 +28,16 @@ const initApp = async () => {
         // console.error("Failed to dial:", err);
         return;
       }
-      msNode.assignPeer(idStr, conn);
+      const msNode = new MediaServer(mediaServerEndPoints[0]);
       pull(
         conn,
         pull.map(o => JSON.parse(o.toString())),
         tap(console.log),
-        tap(msNode.processStreamerEvent),
+        tap(o=> msNode.processStreamerEvent(o, conn)),
         pull.log()
       );
       isDialed = true;
+      console.log("stop dial");
     });
   });
 

@@ -22,7 +22,6 @@ class MediaServer {
     this.errorStreamInit = this.errorStreamInit.bind(this);
     this.sendStreamInit = this.sendStreamInit.bind(this);
     this.processReceiveInit = this.processReceiveInit.bind(this);
-    this.assignPeer = this.assignPeer.bind(this);
     this.processStreamerEvent = this.processStreamerEvent.bind(this);
 
     this.socket = new Websocket(this.wsUrl, this.protocal);
@@ -63,7 +62,7 @@ class MediaServer {
     );
   }
 
-  processStreamerEvent(event) {
+  processStreamerEvent(event, conn) {
     const events = {
       sendCreateOffer: ({ jsep }) => {
         pull(
@@ -71,28 +70,22 @@ class MediaServer {
             this.msPeerHandler._configure(jsep.type, jsep.sdp)
           ),
           pull.map(JSON.stringify),
-          tap(o => console.log),
-          this.msPeerHandler._conn
+          tap(console.log),
+          conn
         );
       },
       sendTrickleCandidate: ({ candidate }) => {
         pull(
           pullPromise.source(this.msPeerHandler.addIceCandidate(candidate)),
           pull.map(JSON.stringify),
-          tap(o => console.log),
+          tap(console.log),
           pull.drain(o => {
             console.log("Send TrickleCandidate");
           })
-          //this.msPeerHandler._conn
         );
       }
     };
     events[event.request] && events[event.request](event);
-  }
-  assignPeer(peerId, conn) {
-    // from handleIdpool.
-    this.msPeerHandler._conn = conn;
-    this.peers[peerId] = this.msPeerHandler;
   }
 }
 
