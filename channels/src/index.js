@@ -14,6 +14,12 @@ const updateChannelInfo = info => {
     document.body.appendChild(dom);
   }
 };
+
+const processEvents = event => {
+  const events = {};
+  events[type] && events[type](event);
+};
+
 const initApp = () => {
   console.log("init app");
   createNode
@@ -22,6 +28,7 @@ const initApp = () => {
       node.on("peer:discovery", peerInfo => {
         const idStr = peerInfo.id.toB58String();
         console.log("Discovered: " + idStr);
+        updateChannelInfo({id: idStr});
         node.dialProtocol(peerInfo, '/streamer', (err, conn) => {
           if (err) {
             // console.error("Failed to dial:", err);
@@ -29,17 +36,9 @@ const initApp = () => {
           }
           pull(
             conn,
-            pull.drain(o => {
-              const obj = JSON.parse(o.toString());
-              console.log('responsed', obj);
-              updateChannelInfo({...obj, id: idStr});
-              pull(
-                pull.values(['gotcha', ': ', node.peerInfo.id.toB58String()]),
-                conn
-              )
-            })
+            processEvents,
+            pull.log()
           )
-
         });
       });
       node.on("peer:connect", peerInfo => {

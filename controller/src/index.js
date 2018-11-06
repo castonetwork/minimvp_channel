@@ -1,8 +1,11 @@
 const pull = require("pull-stream");
-const { tap } = require("pull-tap");
+const {tap} = require("pull-tap");
 const createNode = require("./create-node");
 const MediaServer = require("./MediaServer");
 const mediaServerEndPoints = ["ws://13.209.96.83:8188"];
+const Pushable = require('pull-pushable');
+
+let sendChannel = Pushable();
 
 const initApp = async () => {
   console.log("init app");
@@ -12,6 +15,12 @@ const initApp = async () => {
   console.log("node is ready", node.peerInfo.id.toB58String());
 
   let isDialed = false;
+  node.handle("/streamer", (protocol, conn) => {
+    pull(
+      sendChannel,
+      conn
+    );
+  });
   node.on("peer:discovery", peerInfo => {
     const idStr = peerInfo.id.toB58String();
     // console.log("Discovered: " + idStr);
