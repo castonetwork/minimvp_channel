@@ -71,7 +71,8 @@ const initApp = async () => {
   domReady.then(createNode).then(node => {
     console.log("node created");
     console.log("node is ready", node.peerInfo.id.toB58String());
-    node.handle("/cast", (protocol, conn) => {
+
+    node.handle("/streamer", (protocol, conn) => {
       document.getElementById("btnReady").classList.remove("connecting");
       document.getElementById("btnReady").classList.remove("button-outline");
       console.log("dialed!!");

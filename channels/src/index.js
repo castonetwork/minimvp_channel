@@ -29,7 +29,7 @@ const initApp = () => {
         const idStr = peerInfo.id.toB58String();
         console.log("Discovered: " + idStr);
         updateChannelInfo({id: idStr});
-        node.dialProtocol(peerInfo, '/streamer', (err, conn) => {
+        node.dialProtocol(peerInfo, '/controller', (err, conn) => {
           if (err) {
             // console.error("Failed to dial:", err);
             return;

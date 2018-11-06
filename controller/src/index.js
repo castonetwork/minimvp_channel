@@ -15,7 +15,7 @@ const initApp = async () => {
   console.log("node is ready", node.peerInfo.id.toB58String());
 
   let isDialed = false;
-  node.handle("/streamer", (protocol, conn) => {
+  node.handle("/controller", (protocol, conn) => {
     pull(
       sendChannel,
       conn
@@ -24,7 +24,7 @@ const initApp = async () => {
   node.on("peer:discovery", peerInfo => {
     const idStr = peerInfo.id.toB58String();
     // console.log("Discovered: " + idStr);
-    !isDialed && node.dialProtocol(peerInfo, "/cast", (err, conn) => {
+    !isDialed && node.dialProtocol(peerInfo, "/streamer", (err, conn) => {
       if (err) {
         // console.error("Failed to dial:", err);
         return;
