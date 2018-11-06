@@ -11,10 +11,11 @@ const initApp = async () => {
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
 
+  let isDialed = false;
   node.on("peer:discovery", peerInfo => {
     const idStr = peerInfo.id.toB58String();
     // console.log("Discovered: " + idStr);
-    node.dialProtocol(peerInfo, "/cast", (err, conn) => {
+    !isDialed && node.dialProtocol(peerInfo, "/cast", (err, conn) => {
       if (err) {
         // console.error("Failed to dial:", err);
         return;
@@ -27,6 +28,7 @@ const initApp = async () => {
         tap(msNode.processStreamerEvent),
         pull.log()
       );
+      isDialed = true;
     });
   });
 
