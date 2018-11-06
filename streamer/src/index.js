@@ -3,50 +3,52 @@ import "babel-polyfill";
 const pull = require("pull-stream");
 const Pushable = require("pull-pushable");
 let sendStream = Pushable();
-
+let pc;
 const createNode = require("./create-node");
-let offerSDP;
+
 let $ = {};
 const domReady = new Promise((resolve, reject) => {
   console.log("DOM ready");
-  document.getElementById("btnReady").addEventListener("click", e => {
-    sendStream.push({
-      request: "sendCreateOffer",
-      jsep: offerSDP
-    });
+  document.getElementById("btnReady").addEventListener("click", async e => {
+    pc = new RTCPeerConnection({});
+
+    // send any ice candidates to the other peer
+    pc.onicecandidate = event => {
+      //sendStream.push(JSON.stringify({candidate: event.candidate}))
+    };
+
+    // let the "negotiationneeded" event trigger offer generation
+    pc.onnegotiationneeded = async () => {
+      try {
+        await pc.setLocalDescription(await pc.createOffer());
+        // send the offer to the other peer
+        //sendStream.push(JSON.stringify({desc: pc.localDescription}));
+        sendStream.push({
+          request: "sendCreateOffer",
+          jsep: pc.localDescription
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    try {
+      // get a local stream, show it in a self-view and add it to be sent
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true
+      });
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+      document.getElementById("studio").srcObject = stream;
+    } catch (err) {
+      console.erro(err);
+    }
   });
   resolve();
 });
-const numReqAudioTracks = 2;
-const createOffer = async () => {
-  const pc = new RTCPeerConnection(null);
-  for (let i = 0; i < numReqAudioTracks; i++) {
-    const acx = new AudioContext();
-    const dst = acx.createMediaStreamDestination();
-
-    const track = dst.stream.getTracks()[0];
-    pc.addTrack(track, dst.stream);
-  }
-  const offerOpts = {
-    offerToReceiveAudio: 1,
-    offerToReceiveVideo: 1,
-    iceRestart: 0,
-    voiceActivityDetection: 0
-  };
-  try {
-    const offer = await pc.createOffer(offerOpts);
-    await pc.setLocalDescription(offer);
-    return offer;
-  } catch (e) {
-    console.error(e);
-  }
-};
 
 const initApp = async () => {
   console.log("init app");
-
-  offerSDP = await createOffer();
-
   domReady.then(createNode).then(node => {
     console.log("node created");
     console.log("node is ready", node.peerInfo.id.toB58String());
@@ -58,6 +60,7 @@ const initApp = async () => {
         pull.map(o => window.JSON.stringify(o.toString())),
         pull.drain(o => {
           console.log("GET ANSWER? ", o);
+          //await pc.setRemoteDescription(desc);
         })
       );
     });

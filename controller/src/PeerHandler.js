@@ -311,7 +311,7 @@ class PeerHandler {
               _sdp = response.jsep.sdp;
               this._localSdp = response.jsep.sdp;
             }
-            resolve(_sdp);
+            resolve(response.jsep);
           }
           return true;
         },
