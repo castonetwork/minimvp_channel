@@ -11,13 +11,13 @@ const updateChannelInfo = info => {
   /* check id */
   const infoDiv = document.getElementById(info.id);
   if (infoDiv) {
-    infoDiv.textContent = JSON.stringify(info);
+    infoDiv.textContent = window.JSON.stringify(info);
   } else {
     const dom = document.createElement("div");
-    dom.textContent = JSON.stringify(info);
+    dom.textContent = window.JSON.stringify(info);
     dom.setAttribute("id", info.id);
     document.body.appendChild(dom);
-    dom.addEventListener("click", sendController({
+    dom.addEventListener("click", e => sendController({
       type: "requestOfferSDP"
     }));
   }

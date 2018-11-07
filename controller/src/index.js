@@ -26,10 +26,8 @@ const initApp = async () => {
     });
     pull(
       conn,
-      pull.map(o => console.log("drain", o) || o.toString()),
-      pull.drain(o =>
-        console.log(o)
-      )
+      pull.map(o => o.toString()),
+      pull.log()
     )
   });
   node.on("peer:discovery", peerInfo => {
