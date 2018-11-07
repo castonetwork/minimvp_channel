@@ -17,6 +17,9 @@ const updateChannelInfo = info => {
     dom.textContent = JSON.stringify(info);
     dom.setAttribute("id", info.id);
     document.body.appendChild(dom);
+    dom.addEventListener("click", sendController({
+      type: "requestOfferSDP"
+    }));
   }
 };
 
@@ -39,8 +42,8 @@ const initApp = () => {
           return;
         }
         updateChannelInfo({id: idStr});
-        pull(sendController, stringify, conn);
-        pull(conn, tap(consol.log), pull.drain(event =>
+        pull(sendController, stringify(), conn);
+        pull(conn, pull.map(o => o.toString()), tap(console.log), pull.drain(event =>
           processEvents(event)
         ));
 
@@ -49,10 +52,6 @@ const initApp = () => {
           idStr: idStr
         });
       });
-    });
-    node.on("peer:connect", peerInfo => {
-      console.log("connected peerInfo: ", peerInfo.id.toB58String());
-      console.log(peerInfo);
     });
     node.start(err => {
       if (err) throw err;

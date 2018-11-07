@@ -17,6 +17,9 @@
   },
   "homepage": "https://github.com/castonetwork/minimvp_channel#readme",
   "devDependencies": {
+    "babel-core": "^6.26.3",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-runtime": "^6.26.0",
     "parcel": "^1.10.3"
   },
   "dependencies": {
@@ -33,6 +36,7 @@
     "pull-pushable": "^2.2.0",
     "pull-stream": "^3.6.9",
     "pull-stringify": "^2.0.0",
-    "pull-tap": "^1.1.1"
+    "pull-tap": "^1.1.1",
+    "setimmediate": "^1.0.5"
   }
 }

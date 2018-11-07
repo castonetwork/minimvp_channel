@@ -1,10 +1,10 @@
 const pull = require("pull-stream");
-const { tap } = require("pull-tap");
+const {tap} = require("pull-tap");
 const createNode = require("./create-node");
 const MediaServer = require("./MediaServer");
 const mediaServerEndPoints = ["ws://13.209.96.83:8188"];
 const Pushable = require('pull-pushable');
-
+const stringify = require('pull-stringify');
 let sendChannel = Pushable();
 
 const initApp = async () => {
@@ -15,16 +15,21 @@ const initApp = async () => {
 
   let isDialed = false;
   node.handle("/controller", (protocol, conn) => {
-
-    console.log("handle controller", conn)
     pull(
       sendChannel,
+      stringify(),
       conn
     );
+    sendChannel.push({
+      type: "answer",
+      desc: "controller handled"
+    });
     pull(
       conn,
       pull.map(o => console.log("drain", o) || o.toString()),
-      pull.log()
+      pull.drain(o =>
+        console.log(o)
+      )
     )
   });
   node.on("peer:discovery", peerInfo => {
