@@ -30,14 +30,16 @@ const initApp = () => {
     node.on("peer:discovery", peerInfo => {
       const idStr = peerInfo.id.toB58String();
       console.log("Discovered: " + idStr);
-      updateChannelInfo({ id: idStr });
+
       node.dialProtocol(peerInfo, "/controller", (err, conn) => {
         if (err) {
           // console.error("Failed to dial:", err);
           return;
         }
+        updateChannelInfo({ id: idStr });
         pull(sendController, tap(console.log), pull.map(JSON.stringify), conn);
-        pull(conn, tap(console.log), processEvents, pull.log());
+        pull(conn, tap(console.log), tap(o => processEvents(o)), pull.log());
+
         // sendController.push({
         //   type: "channelRegister",
         //   idStr: idStr
