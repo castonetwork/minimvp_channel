@@ -37,6 +37,7 @@
     "pull-stream": "^3.6.9",
     "pull-stringify": "^2.0.0",
     "pull-tap": "^1.1.1",
-    "setimmediate": "^1.0.5"
+    "setimmediate": "^1.0.5",
+    "babel-polyfill": "^6.26.0"
   }
 }
