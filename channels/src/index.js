@@ -1,6 +1,8 @@
 const pull = require("pull-stream");
 const Pushable = require("pull-pushable");
-const { tap } = require("pull-tap");
+const {tap} = require("pull-tap");
+const stringify = require("pull-stringify");
+
 let sendController = Pushable();
 window.pull = pull;
 const createNode = require("./create-node");
@@ -36,14 +38,16 @@ const initApp = () => {
           // console.error("Failed to dial:", err);
           return;
         }
-        updateChannelInfo({ id: idStr });
-        pull(sendController, tap(console.log), pull.map(JSON.stringify), conn);
-        pull(conn, tap(console.log), tap(o => processEvents(o)), pull.log());
+        updateChannelInfo({id: idStr});
+        pull(sendController, stringify, conn);
+        pull(conn, tap(consol.log), pull.drain(event =>
+          processEvents(event)
+        ));
 
-        // sendController.push({
-        //   type: "channelRegister",
-        //   idStr: idStr
-        // });
+        sendController.push({
+          type: "channelRegister",
+          idStr: idStr
+        });
       });
     });
     node.on("peer:connect", peerInfo => {
