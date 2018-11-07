@@ -4,7 +4,7 @@ const pullPromise = require("pull-promise");
 const chance = require("chance").Chance();
 
 class PeerHandler {
-  constructor(_sendStream, _errorStream) {
+  constructor(_sendStream, _errorStream, type = "publisher") {
     this._sendStream = _sendStream;
     this._errorStream = _errorStream;
     this._sessionId;
@@ -16,14 +16,11 @@ class PeerHandler {
       keepaliveTimerId: null
     };
     this._conn;
+    this._type = type;
     this._localSdp;
     this._publisherId;
     this._useVideoSimulcast = false; //config.useVideoSimulcast;
-    this._plugin =
-      //config.type === "origin"
-      "origin" === "origin"
-        ? "janus.plugin.videoroom"
-        : "janus.plugin.streaming";
+    this._plugin = "janus.plugin.videoroom";
     this.transactionQueue = {};
     this.init = this.init.bind(this);
     this._createSession = this._createSession.bind(this);
@@ -33,17 +30,29 @@ class PeerHandler {
   }
 
   init() {
-    return pull(
-      pullPromise.source(this._createSession()),
-      pullPromise.through(o => this._attach()),
-      pull.map(id => {
-        this._handleId = id;
-        this._keepaliveTimerId = this._startKeepAlive(this._handleId);
-      }),
-      pullPromise.through(o => this.createRoom()),
-      pullPromise.through(roomId => this._join()),
-      pull.drain(o => console.log("Success Controller Attach to JANUS!"))
-    );
+    if (this._type === "publisher") {
+      return pull(
+        pullPromise.source(this._createSession()),
+        pullPromise.through(o => this._attach()),
+        pull.map(id => {
+          this._handleId = id;
+          this._keepaliveTimerId = this._startKeepAlive(this._handleId);
+        }),
+        pullPromise.through(o => this.createRoom()),
+        pullPromise.through(roomId => this._join()),
+        pull.drain(o => console.log("Success Controller Attach to JANUS!"))
+      );
+    } else {
+      return pull(
+        pullPromise.source(this._createSession()),
+        pullPromise.through(o => this._attach()),
+        pull.map(id => {
+          this._handleId = id;
+          this._keepaliveTimerId = this._startKeepAlive(this._handleId);
+        }),
+        pull.drain(o => console.log("Success Controller Attach to JANUS!"))
+      );
+    }
   }
 
   _createSession() {
@@ -129,7 +138,7 @@ class PeerHandler {
         request: "create",
         description: "remon",
         //   transaction: tId,
-        bitrate: 5242880,
+        bitrate: 102400,
         publishers: 1,
         fir_freq: 1,
         is_private: false,
@@ -201,7 +210,9 @@ class PeerHandler {
    * @param {Peer} peer
    * @returns {Promise}
    */
-  _join() {
+  _join(broadcastObj) {
+    if (this._type === "subscriber" && !broadcastObj)
+      this._errorStream("No broadCast info");
     let handleId = this._handleId;
     let tId = chance.guid();
 
@@ -213,12 +224,16 @@ class PeerHandler {
       body: {
         request: "join",
         room: this._room.id,
-        ptype: "publisher", // : "listener",
+        ptype: this._type, //"publisher", "subscriber",
         video: true,
         audio: true
       }
     };
 
+    if (this._type === "subscriber") {
+      request.body.feed = broadcastObj.broadcastId;
+      request.body.room = broadcastObj.roomId;
+    }
     this._sendStream.push(request);
 
     return new Promise((resolve, reject) => {
@@ -239,10 +254,10 @@ class PeerHandler {
             );
           } else {
             if ("jsep" in response) {
-              response.jsep.sdp;
+              resolve(response.jsep);
+            } else {
+              resolve();
             }
-
-            resolve();
           }
           return true;
         },
@@ -354,6 +369,68 @@ class PeerHandler {
         id: tId,
         ack: response => {
           resolve();
+          return true;
+        }
+      };
+    });
+  }
+  getRoomList() {
+    let tId = chance.guid();
+    let request = {
+      janus: "message",
+      session_id: this._sessionId,
+      handle_id: this._handleId,
+      transaction: tId,
+      body: {
+        request: "list"
+      }
+    };
+
+    this._sendStream.push(request);
+    return new Promise((resolve, reject) => {
+      this.transactionQueue[tId] = {
+        id: tId,
+        success: response => {
+          resolve(response.plugindata.data.list);
+          return true;
+        },
+        failure: response => {
+          this._errorStream.push(response.error.reason);
+          return true;
+        }
+      };
+    });
+  }
+
+  getRoomDetail(roomId) {
+    let tId = chance.guid();
+    let request = {
+      janus: "message",
+      session_id: this._sessionId,
+      handle_id: this._handleId,
+      transaction: tId,
+      body: {
+        request: "listparticipants",
+        room: roomId
+      }
+    };
+
+    this._sendStream.push(request);
+    return new Promise((resolve, reject) => {
+      this.transactionQueue[tId] = {
+        id: tId,
+        success: response => {
+          console.log("getRoomDetail");
+          let data = response.plugindata.data;
+
+          resolve({
+            roomId: data.room,
+            broadcastId: data.participants[0].id
+          });
+          return true;
+        },
+        failure: response => {
+          this._errorStream.push(response.error.reason);
           return true;
         }
       };

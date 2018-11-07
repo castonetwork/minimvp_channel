@@ -6,9 +6,10 @@ const { tap } = require("pull-tap");
 const Websocket = require("ws");
 const pullPromise = require("pull-promise");
 const Pushable = require("pull-pushable");
+const stringify = require("pull-stringify");
 
 class MediaServer {
-  constructor(_wsUrl, _protocol = "janus-protocol", _config) {
+  constructor(_wsUrl, _config, _protocol = "janus-protocol") {
     console.log(this);
     if (!_wsUrl) throw new Error("NO webSocket url.");
     this.wsUrl = _wsUrl;
@@ -28,7 +29,11 @@ class MediaServer {
     this.errorStreamInit();
     this.socket.on("error", this.errorStream.push);
     this.socket.on("open", () => {
-      this.msPeerHandler = new PeerHandler(this.sendStream, this.errorStream);
+      this.msPeerHandler = new PeerHandler(
+        this.sendStream,
+        this.errorStream,
+        _config ? _config.type : undefined
+      );
       this.sendStreamInit();
       this.processReceiveInit();
       this.msPeerHandler.init();
@@ -82,6 +87,30 @@ class MediaServer {
           pull.drain(o => {
             console.log("Send TrickleCandidate");
           })
+        );
+      },
+      requestOfferSDP: () => {
+        pull(
+          pullPromise.source(this.msPeerHandler.getRoomList()),
+          pull.map(o => {
+            let list = o.filter(
+              room =>
+                this.msPeerHandler._room.id !== room.room &&
+                room.num_participants > 0
+            );
+            return list[0];
+          }),
+          pullPromise.through(o => this.msPeerHandler.getRoomDetail(o.room)),
+          pullPromise.through(o => this.msPeerHandler._join(o)),
+          pull.map(o => {
+            return {
+              type: "responseOfferSDP",
+              jsep: o
+            };
+          }),
+          tap(console.log),
+          stringify(),
+          conn
         );
       }
     };

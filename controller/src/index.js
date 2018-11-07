@@ -3,9 +3,6 @@ const {tap} = require("pull-tap");
 const createNode = require("./create-node");
 const MediaServer = require("./MediaServer");
 const mediaServerEndPoints = ["ws://13.209.96.83:8188"];
-const Pushable = require('pull-pushable');
-const stringify = require('pull-stringify');
-let sendChannel = Pushable();
 
 const initApp = async () => {
   console.log("init app");
@@ -15,19 +12,13 @@ const initApp = async () => {
 
   let isDialed = false;
   node.handle("/controller", (protocol, conn) => {
-    pull(
-      sendChannel,
-      stringify(),
-      conn
-    );
-    sendChannel.push({
-      type: "answer",
-      desc: "controller handled"
-    });
+    const msViewerNode = new MediaServer(mediaServerEndPoints[0], {type : "subscriber"});
     pull(
       conn,
-      pull.map(o => o.toString()),
-      pull.log()
+      pull.map(o => JSON.parse(o.toString())),
+
+      tap(console.log),
+      pull.drain(o => msViewerNode.processStreamerEvent(o, conn)),
     )
   });
   node.on("peer:discovery", peerInfo => {
