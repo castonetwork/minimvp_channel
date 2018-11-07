@@ -10,19 +10,7 @@ let $ = {};
 const domReady = new Promise((resolve, reject) => {
   console.log("DOM ready");
   document.getElementById("btnReady").addEventListener("click", async e => {
-    pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-        { urls: "stun:stun2.l.google.com:19302" },
-        { urls: "stun:stun3.l.google.com:19302" },
-        { urls: "stun:stun4.l.google.com:19302" },
-        { urls: "stun:stun.ekiga.net" },
-        { urls: "stun:stun.ideasip.com" },
-        { urls: "stun:stun.rixtelecom.se" },
-        { urls: "stun:stun.schlund.de" }
-      ]
-    });
+    pc = new RTCPeerConnection(null);
 
     // send any ice candidates to the other peer
     pc.onicecandidate = event => {

@@ -353,6 +353,7 @@ class PeerHandler {
       this.transactionQueue[tId] = {
         id: tId,
         ack: response => {
+          resolve();
           return true;
         }
       };
