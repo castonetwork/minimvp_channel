@@ -28,6 +28,9 @@ class MediaServer {
     this.socket = new Websocket(this.wsUrl, this.protocal);
     this.errorStreamInit();
     this.socket.on("error", this.errorStream.push);
+    this.socket.on("close", () => {
+      this.errorStream.push("CONNECTION CLOSED!");
+    });
     this.socket.on("open", () => {
       this.msPeerHandler = new PeerHandler(
         this.sendStream,
@@ -62,12 +65,14 @@ class MediaServer {
     pull(
       wsSource(this.socket),
       pull.map(o => JSON.parse(o)),
-      tap(o => console.log("[RECV] ", o)),
+      tap(o => {
+        if (o.janus !== "ack") console.log("[RECV] ", o);
+      }),
       pull.drain(this.msPeerHandler.receive)
     );
   }
 
-  processStreamerEvent(event, conn) {
+  processStreamerEvent(event, sendToPeer) {
     const events = {
       sendCreateOffer: ({ jsep }) => {
         pull(
@@ -76,16 +81,34 @@ class MediaServer {
           ),
           pull.map(JSON.stringify),
           tap(console.log),
-          conn
+          sendToPeer
+          // pull.drain(o=>{
+          //   sendToPeer.push(o);
+          // })
+        );
+      },
+      sendCreateAnswer: ({ jsep }) => {
+        console.log("sendCreateAnswer");
+        console.log(jsep);
+
+        pull(
+          pullPromise.source(this.msPeerHandler._start(jsep)),
+          pull.map(JSON.stringify),
+          //tap(console.log),
+          pull.drain(o => {
+            console.log("Finish sendCreateAnswer");
+          })
         );
       },
       sendTrickleCandidate: ({ candidate }) => {
+        console.log("sendTrickleCandidate");
+        console.log(candidate);
         pull(
           pullPromise.source(this.msPeerHandler.addIceCandidate(candidate)),
           pull.map(JSON.stringify),
           tap(console.log),
           pull.drain(o => {
-            console.log("Send TrickleCandidate");
+            console.log("Finish TrickleCandidate");
           })
         );
       },
@@ -93,15 +116,18 @@ class MediaServer {
         pull(
           pullPromise.source(this.msPeerHandler.getRoomList()),
           pull.map(o => {
-            let list = o.filter(
-              room =>
-                this.msPeerHandler._room.id !== room.room &&
-                room.num_participants > 0
-            );
+            let list = o.filter(room => room.num_participants > 0);
+            console.log("RoomList");
+            console.log(list);
             return list[0];
           }),
           pullPromise.through(o => this.msPeerHandler.getRoomDetail(o.room)),
-          pullPromise.through(o => this.msPeerHandler._join(o)),
+          tap(console.log),
+          pullPromise.through(o => {
+            console.log("participant");
+            console.log(o);
+            return this.msPeerHandler._join(o);
+          }),
           pull.map(o => {
             return {
               type: "responseOfferSDP",
@@ -110,7 +136,10 @@ class MediaServer {
           }),
           tap(console.log),
           stringify(),
-          conn
+          sendToPeer
+          // pull.drain(o=>{
+          //   sendToPeer.push(o);
+          // })
         );
       }
     };

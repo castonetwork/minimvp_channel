@@ -1,9 +1,11 @@
 const pull = require("pull-stream");
-const {tap} = require("pull-tap");
+const { tap } = require("pull-tap");
+const Pushable = require("pull-pushable");
 const createNode = require("./create-node");
 const MediaServer = require("./MediaServer");
 const mediaServerEndPoints = ["ws://13.209.96.83:8188"];
-
+const stringify = require("pull-stringify");
+const probe = require("pull-probe");
 const initApp = async () => {
   console.log("init app");
   let node = await createNode();
@@ -12,34 +14,42 @@ const initApp = async () => {
 
   let isDialed = false;
   node.handle("/controller", (protocol, conn) => {
-    const msViewerNode = new MediaServer(mediaServerEndPoints[0], {type : "subscriber"});
+    let sendToChannel = Pushable();
+    const msViewerNode = new MediaServer(mediaServerEndPoints[0], {
+      type: "subscriber"
+    });
+    //pull(sendToChannel, stringify(), conn);
     pull(
       conn,
       pull.map(o => JSON.parse(o.toString())),
 
       tap(console.log),
-      pull.drain(o => msViewerNode.processStreamerEvent(o, conn)),
-    )
+      pull.drain(o => msViewerNode.processStreamerEvent(o, conn))
+    );
   });
   node.on("peer:discovery", peerInfo => {
     const idStr = peerInfo.id.toB58String();
     // console.log("Discovered: " + idStr);
-    !isDialed && node.dialProtocol(peerInfo, "/streamer", (err, conn) => {
-      if (err) {
-        // console.error("Failed to dial:", err);
-        return;
-      }
-      const msNode = new MediaServer(mediaServerEndPoints[0]);
-      pull(
-        conn,
-        pull.map(o => JSON.parse(o.toString())),
-        tap(console.log),
-        tap(o => msNode.processStreamerEvent(o, conn)),
-        pull.log()
-      );
-      isDialed = true;
-      console.log("stop dial");
-    });
+    !isDialed &&
+      node.dialProtocol(peerInfo, "/streamer", (err, conn) => {
+        if (err) {
+          // console.error("Failed to dial:", err);
+          return;
+        }
+        let sendToStudio = Pushable();
+        const msNode = new MediaServer(mediaServerEndPoints[0]);
+        //pull(sendToStudio, stringify(),probe('controller'), conn);
+        pull(
+          conn,
+          pull.map(o => JSON.parse(o.toString())),
+          tap(console.log),
+          tap(o => msNode.processStreamerEvent(o, conn)),
+          pull.log()
+        );
+
+        isDialed = true;
+        console.log("stop dial");
+      });
   });
 
   node.start(err => {

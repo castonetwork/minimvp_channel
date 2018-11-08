@@ -5,6 +5,9 @@ const pull = require("pull-stream");
 const Pushable = require("pull-pushable");
 const { tap } = require("pull-tap");
 const stringify = require("pull-stringify");
+const configuration = {
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+};
 
 let sendController = Pushable();
 window.pull = pull;
@@ -30,22 +33,21 @@ const updateChannelInfo = info => {
 };
 
 const processEvents = event => {
-  console.log("processEvents")
-  console.log(event)
-  console.log(event.type)
+  console.log("processEvents");
+  console.log(event);
+  console.log(event.type);
   const events = {
-    responseOfferSDP : async ({ jsep }) => {
-      console.log()
-      let pc = new RTCPeerConnection(null);
+    responseOfferSDP: async ({ jsep }) => {
+      let pc = new RTCPeerConnection(configuration);
 
       pc.onicecandidate = event => {
         console.log("[ICE]", event);
-        // if (event.candidate) {
-        //   sendController.push({
-        //     request: "sendTrickleCandidate",
-        //     candidate: event.candidate
-        //   });
-        // }
+        if (event.candidate) {
+          sendController.push({
+            request: "sendTrickleCandidate",
+            candidate: event.candidate
+          });
+        }
       };
 
       pc.oniceconnectionstatechange = function(e) {
@@ -54,12 +56,18 @@ const processEvents = event => {
       // let the "negotiationneeded" event trigger offer generation
       pc.ontrack = async event => {
         console.log("[ON Strack]", event);
-        console.log(event)
+        console.log(event);
+        //event.streams.forEach(track => pc.addTrack(track, stream));
         document.getElementById("studio").srcObject = event.streams[0];
       };
 
       try {
         await pc.setRemoteDescription(jsep);
+        await pc.setLocalDescription(await pc.createAnswer());
+        sendController.push({
+          request: "sendCreateAnswer",
+          jsep: pc.localDescription
+        });
         console.log("localDescription", pc.localDescription);
       } catch (err) {
         console.error(err);
@@ -70,46 +78,46 @@ const processEvents = event => {
       //document.getElementById("studio").srcObject = stream;
     }
   };
-  if(events[event.type])
-    return events[event.type](event);
-  else{
-    return new Promise((resolve, reject)=>{
+  if (events[event.type]) return events[event.type](event);
+  else {
+    return new Promise((resolve, reject) => {
       reject("No processEvent");
     });
   }
 };
 
 const initApp = () => {
-  let boradCasters = {
-
-  }
+  let boradCasters = {};
   console.log("init app");
   createNode.then(node => {
     window.currentNode = node;
     node.on("peer:discovery", peerInfo => {
       const idStr = peerInfo.id.toB58String();
-      
+
       console.log("Discovered: " + idStr);
 
-      !boradCasters[idStr] && node.dialProtocol(peerInfo, "/controller", (err, conn) => {
-        if (err) {
-          // console.error("Failed to dial:", err);
-          return;
-        }
-        boradCasters[idStr] = true;
-        updateChannelInfo({ id: idStr });
-        pull(sendController, stringify(), conn);
-        pull(
-          conn,
-          pull.map(o => window.JSON.parse(o.toString())),
-          pull.drain(o => {
-            console.log("Drained", o);
-            processEvents(o).then(x => {
-              console.log("setRemoteDescription!");
-            }).catch(console.error);
-          })
-        );
-      });
+      !boradCasters[idStr] &&
+        node.dialProtocol(peerInfo, "/controller", (err, conn) => {
+          if (err) {
+            // console.error("Failed to dial:", err);
+            return;
+          }
+          boradCasters[idStr] = true;
+          updateChannelInfo({ id: idStr });
+          pull(sendController, stringify(), conn);
+          pull(
+            conn,
+            pull.map(o => window.JSON.parse(o.toString())),
+            pull.drain(o => {
+              console.log("Drained", o);
+              processEvents(o)
+                .then(x => {
+                  console.log("setRemoteDescription!");
+                })
+                .catch(console.error);
+            })
+          );
+        });
     });
     node.start(err => {
       if (err) throw err;

@@ -231,6 +231,7 @@ class PeerHandler {
     };
 
     if (this._type === "subscriber") {
+      this._room.id = broadcastObj.roomId;
       request.body.feed = broadcastObj.broadcastId;
       request.body.room = broadcastObj.roomId;
     }
@@ -391,6 +392,8 @@ class PeerHandler {
       this.transactionQueue[tId] = {
         id: tId,
         success: response => {
+          console.log("getRoomList");
+          console.log(JSON.stringify(response.plugindata.data.list, null, 2))
           resolve(response.plugindata.data.list);
           return true;
         },
@@ -421,11 +424,13 @@ class PeerHandler {
         id: tId,
         success: response => {
           console.log("getRoomDetail");
+          console.log(JSON.stringify(response, null, 2 ));
           let data = response.plugindata.data;
 
           resolve({
             roomId: data.room,
-            broadcastId: data.participants[0].id
+            broadcastId: data.participants[0].id,
+            isPublisher: data.participants[0].publisher,
           });
           return true;
         },
@@ -435,6 +440,55 @@ class PeerHandler {
         }
       };
     });
+  }
+  /**
+   * start 메시지를 janus서버로 전송
+   * @param {Number} id
+   */
+  _start(jsep) {
+    let tId = chance.guid();
+    let request = {
+      janus: "message",
+      session_id: this._sessionId,
+      handle_id: this._handleId,
+      transaction: tId,
+      body: {
+        request: "start",
+//        room: this._room.id
+      },
+      jsep:jsep
+    };
+    console.log("let start get broadcast stream!")
+    this._sendStream.push(request);
+    return new Promise((resolve, reject)=>{
+      this.transactionQueue[tId] = {
+        id: tId,
+        ack: response => {
+          return false;
+        },
+        event: response => {
+          let handleId = response.sender;
+
+          if ("error_code" in response.plugindata.data) {
+            reject(
+              response.plugindata.data.error_code +
+                ":" +
+                response.plugindata.data.error
+            );
+          } else {
+            console.log("Success Start!");
+            console.log(response);
+            resolve();
+          }
+          return true;
+        },
+        failure: response => {
+          console.error(response);
+          reject();
+          return true;
+        }
+      };
+    })
   }
 
   receive(o) {
