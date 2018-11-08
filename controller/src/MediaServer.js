@@ -79,12 +79,8 @@ class MediaServer {
           pullPromise.source(
             this.msPeerHandler._configure(jsep.type, jsep.sdp)
           ),
-          pull.map(JSON.stringify),
           tap(console.log),
-          sendToPeer
-          // pull.drain(o=>{
-          //   sendToPeer.push(o);
-          // })
+          pull.drain(sendToPeer.push)
         );
       },
       sendCreateAnswer: ({ jsep }) => {
@@ -94,7 +90,6 @@ class MediaServer {
         pull(
           pullPromise.source(this.msPeerHandler._start(jsep)),
           pull.map(JSON.stringify),
-          //tap(console.log),
           pull.drain(o => {
             console.log("Finish sendCreateAnswer");
           })
@@ -135,11 +130,7 @@ class MediaServer {
             };
           }),
           tap(console.log),
-          stringify(),
-          sendToPeer
-          // pull.drain(o=>{
-          //   sendToPeer.push(o);
-          // })
+          pull.drain(sendToPeer.push)
         );
       }
     };

@@ -18,13 +18,12 @@ const initApp = async () => {
     const msViewerNode = new MediaServer(mediaServerEndPoints[0], {
       type: "subscriber"
     });
-    //pull(sendToChannel, stringify(), conn);
+    pull(sendToChannel, stringify(), conn);
     pull(
       conn,
       pull.map(o => JSON.parse(o.toString())),
-
       tap(console.log),
-      pull.drain(o => msViewerNode.processStreamerEvent(o, conn))
+      pull.drain(o => msViewerNode.processStreamerEvent(o, sendToChannel))
     );
   });
   node.on("peer:discovery", peerInfo => {
@@ -38,12 +37,12 @@ const initApp = async () => {
         }
         let sendToStudio = Pushable();
         const msNode = new MediaServer(mediaServerEndPoints[0]);
-        //pull(sendToStudio, stringify(),probe('controller'), conn);
+        pull(sendToStudio, stringify(), conn);
         pull(
           conn,
           pull.map(o => JSON.parse(o.toString())),
           tap(console.log),
-          tap(o => msNode.processStreamerEvent(o, conn)),
+          tap(o => msNode.processStreamerEvent(o, sendToStudio)),
           pull.log()
         );
 
