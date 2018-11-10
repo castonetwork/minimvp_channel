@@ -1,5 +1,43 @@
-# Initialize
+# Prerequisites
+* node.js(10.x+)
+* docker
 
+# How to start
+## build all
+(from root directory)
+```
+cd streamer
+npm install
+cd ../controller
+npm install
+cd ../channels
+npm install
+cd ../mediaServer
+npm run build
+```
+## start servers
+### mediaServer
+```
+cd mediaServer
+npm start
+```
+### controller
+```
+cd controller
+npm start
+```
+### streamer(webServer)
+```
+cd streamer
+npm start
+```
+### channels(webServer)
+```
+cd channels
+npm start
+```
+# Workflow sequence diagrams
+## Initialize
 ```mermaid
 sequenceDiagram
   participant st as streamer
@@ -22,9 +60,7 @@ sequenceDiagram
   ct->>ms:join room 
   
 ```
-
-# Streamer Connect
-
+## Streamer Connect
 ```mermaid
 sequenceDiagram
   participant st as streamer
@@ -47,9 +83,7 @@ sequenceDiagram
   ms-->st: ICE executed
   st->>ms: stream Start
 ```
-
-# Channel Connection
-
+## Channel Connection
 ```mermaid
 sequenceDiagram
   participant st as streamer
