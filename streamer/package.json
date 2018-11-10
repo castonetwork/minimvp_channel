@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-    "web": "parcel -p 2345 ./public/index.html"
+    "start": "parcel -p 2345 ./public/index.html"
   },
   "author": "CASTO",
   "license": "MIT",
