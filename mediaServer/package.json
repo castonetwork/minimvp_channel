@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "docker build -t castonetwork/janus-gateway .",
-    "start": "DOCKER_IP=\"0.0.0.0\" docker run -p 1818:80 -p 7088:7088 -p 8088:8088 -p 8188:8188 -p 10000-10200:10000-10200/udp castonetwork/janus-gateway"
+    "start": "DOCKER_IP=\"0.0.0.0\" docker run  --name castoms -p 1818:80 -p 7088:7088 -p 8088:8088 -p 8188:8188 -p 10000-10200:10000-10200/udp castonetwork/janus-gateway",
+    "stop": "docker stop castoms"
   },
   "keywords": [],
   "author": "",
