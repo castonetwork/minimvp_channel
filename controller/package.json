@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node ./src/index.js",
+    "start": "MSPORT=\"ws://127.0.0.1:8188\" node ./src/index.js",
+    "remote": "MSPORT=\"ws://13.209.96.83:8188\" node ./src/index.js",
     "debug": "DEBUG=controller node ./src/index.js"
   },
   "author": "",

@@ -3,11 +3,11 @@ const { tap } = require("pull-tap");
 const Pushable = require("pull-pushable");
 const createNode = require("./create-node");
 const MediaServer = require("./MediaServer");
-const mediaServerEndPoints = ["ws://13.209.96.83:8188"];
+const mediaServerEndPoints = [ process.env.MSPORT || "ws://127.0.0.1:8188"];
 const stringify = require("pull-stringify");
 const probe = require("pull-probe");
 const initApp = async () => {
-  console.log("init app");
+  console.log("init app", mediaServerEndPoints);
   let node = await createNode();
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
