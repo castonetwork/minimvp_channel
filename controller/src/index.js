@@ -6,12 +6,15 @@ const MediaServer = require("./MediaServer");
 const mediaServerEndPoints = [ process.env.MSPORT || "ws://127.0.0.1:8188"];
 const stringify = require("pull-stringify");
 const probe = require("pull-probe");
+const JanusServer = require("./Janus");
+
 const initApp = async () => {
   console.log("init app", mediaServerEndPoints);
   let node = await createNode();
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
-
+  let janus = new JanusServer();
+  
   let isDialed = false;
   node.handle("/controller", (protocol, conn) => {
     let sendToChannel = Pushable();
