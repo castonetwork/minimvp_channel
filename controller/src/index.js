@@ -2,56 +2,47 @@ const pull = require("pull-stream");
 const { tap } = require("pull-tap");
 const Pushable = require("pull-pushable");
 const createNode = require("./create-node");
-const MediaServer = require("./MediaServer");
 const mediaServerEndPoints = [ process.env.MSPORT || "ws://127.0.0.1:8188"];
 const stringify = require("pull-stringify");
-const probe = require("pull-probe");
 const JanusServer = require("./Janus");
 
 const initApp = async () => {
-  console.log("init app", mediaServerEndPoints);
+  console.log(">> init mediaServer", mediaServerEndPoints);
+  const janusInstance = await new JanusServer();
+  console.log(">> janusInstance instantiated");
+  console.log(">> init controller Node");
   let node = await createNode();
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
-  let janus = new JanusServer();
-  
-  let isDialed = false;
+
   node.handle("/controller", (protocol, conn) => {
     let sendToChannel = Pushable();
-    const msViewerNode = new MediaServer(mediaServerEndPoints[0], {
-      type: "subscriber"
-    });
     pull(sendToChannel, stringify(), conn);
     pull(
       conn,
       pull.map(o => JSON.parse(o.toString())),
       tap(console.log),
-      pull.drain(o => msViewerNode.processStreamerEvent(o, sendToChannel))
+      pull.drain(o => {})
     );
   });
   node.on("peer:discovery", peerInfo => {
     const idStr = peerInfo.id.toB58String();
     // console.log("Discovered: " + idStr);
-    !isDialed &&
-      node.dialProtocol(peerInfo, "/streamer", (err, conn) => {
-        if (err) {
-          // console.error("Failed to dial:", err);
-          return;
-        }
-        let sendToStudio = Pushable();
-        const msNode = new MediaServer(mediaServerEndPoints[0]);
-        pull(sendToStudio, stringify(), conn);
-        pull(
-          conn,
-          pull.map(o => JSON.parse(o.toString())),
-          tap(console.log),
-          tap(o => msNode.processStreamerEvent(o, sendToStudio)),
-          pull.log()
-        );
-
-        isDialed = true;
-        console.log("stop dial");
-      });
+    node.dialProtocol(peerInfo, "/streamer", (err, conn) => {
+      if (err) {
+        // console.error("Failed to dial:", err);
+        return;
+      }
+      let sendToStudio = Pushable();
+      pull(
+        sendToStudio,
+        stringify(),
+        conn,
+        pull.map(o => JSON.parse(o.toString())),
+        tap(console.log),
+        pull.log()
+      );
+    });
   });
 
   node.start(err => {
