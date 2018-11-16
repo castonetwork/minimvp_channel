@@ -22,6 +22,7 @@
     "libp2p-tcp": "^0.13.0",
     "libp2p-websocket-star": "^0.9.0",
     "libp2p-websockets": "^0.12.0",
+    "pull-combine-latest": "^1.1.2",
     "pull-probe": "^1.0.2",
     "pull-promise": "^2.0.0",
     "pull-pushable": "^2.2.0",

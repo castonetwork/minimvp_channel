@@ -1,9 +1,17 @@
 import "babel-polyfill";
 
 const pull = require("pull-stream");
+const combineLatest = require("pull-combine-latest");
 const Pushable = require("pull-pushable");
-let sendStream = Pushable();
+const Notify = require("pull-notify");
 const createNode = require("./create-node");
+
+/* UI Stream */
+const btnReadyClickStream = Pushable();
+
+/* Network Stream */
+const sendStream = Pushable();
+const networkReadyNotify = Notify();
 
 /* peerConnection */
 let pc = new RTCPeerConnection(null);
@@ -23,29 +31,36 @@ pc.oniceconnectionstatechange = () =>
 // let the "negotiationneeded" event trigger offer generation
 pc.onnegotiationneeded = () => {
 };
-const onBtnReadyClick = async e => {
-  try {
-    // get a local stream, show it in a self-view and add it to be sent
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true
-    });
-    stream.getTracks().some(track => pc.addTrack(track, stream));
-    document.getElementById("studio").srcObject = stream;
-    try {
-      await pc.setLocalDescription(await pc.createOffer());
-      console.log("localDescription", pc.localDescription);
-      sendStream.push({
-        request: "sendCreateOffer",
-        jsep: pc.localDescription
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  } catch (err) {
-    console.error(err);
-  }
-};
+
+const onBtnReadyClick = e => console.log("ready clicked") || btnReadyClickStream.push(e);
+
+const sendCreateOfferStream = async () =>
+  pull(
+    combineLatest([btnReadyClickStream, networkReadyNotify.listen()]),
+    pull.drain(async o => {
+      try {
+        // get a local stream, show it in a self-view and add it to be sent
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: true
+        });
+        stream.getTracks().some(track => pc.addTrack(track, stream));
+        document.getElementById("studio").srcObject = stream;
+        try {
+          await pc.setLocalDescription(await pc.createOffer());
+          console.log("localDescription", pc.localDescription);
+          sendStream.push({
+            request: "sendCreateOffer",
+            jsep: pc.localDescription
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    })
+  );
 
 const domReady = () => {
   console.log("DOM ready");
@@ -70,6 +85,9 @@ const handleStreamer = (protocol, conn) => {
       controllerResponse[o.type] && controllerResponse[o.type](o);
     })
   );
+  /* build a createOfferStream */
+  sendCreateOfferStream();
+  networkReadyNotify(true);
 };
 
 const initApp = async () => {
