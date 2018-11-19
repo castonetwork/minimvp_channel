@@ -74,7 +74,6 @@ class Janus {
         description: buffer.toString(),
         status: true,
       });
-
     });
 
     this._child.on("exit", (code, signal) => {
