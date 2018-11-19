@@ -1,5 +1,4 @@
 const pull = require("pull-stream");
-const {tap} = require("pull-tap");
 const createNode = require("./create-node");
 const mediaServerEndPoints = [process.env.MSPORT || "ws://127.0.0.1:8188"];
 const JanusServer = require("./Janus");
