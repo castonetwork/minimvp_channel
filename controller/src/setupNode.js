@@ -1,5 +1,7 @@
+const pull = require("pull-stream");
 const stringify = require("pull-stringify");
 const Pushable = require("pull-pushable");
+const {tap} = require("pull-tap");
 
 const setupNode = node => {
   node.handle("/controller", (protocol, conn) => {
@@ -28,8 +30,10 @@ const setupNode = node => {
         stringify(),
         conn,
         pull.map(o => JSON.parse(o.toString())),
-        tap(console.log),
-        pull.log()
+        tap(o => console.log("[STREAMER]", o)),
+        pull.drain( o=> {
+
+        })
       );
     });
   });

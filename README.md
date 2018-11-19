@@ -1,6 +1,6 @@
 # Prerequisites
 * node.js(10.x+)
-* docker
+* docker (if you want to run Windows on your PC)
 
 # How to start
 ## build all
@@ -16,7 +16,7 @@ cd ../mediaServer
 npm run build
 ```
 ## start servers
-### mediaServer
+### mediaServer (docker only)
 ```
 cd mediaServer
 npm start
