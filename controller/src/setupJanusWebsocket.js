@@ -4,11 +4,10 @@ const wsSink = require("pull-ws");
 const Websocket = require("ws");
 const Notify = require("pull-notify");
 const {tap} = require("pull-tap");
-// const pullPromise = require("pull-promise");
-const Pushable = require("pull-pushable");
-const sendStream = Pushable();
 const recvNotify = Notify();
 const chance = require("chance").Chance();
+
+let sendStream, sendStreamer;
 
 const sendSocketStream = (obj, resultHandler) => new Promise((resolve, reject) => {
   const transaction = chance.guid();
@@ -67,7 +66,9 @@ const joinRoom = async ({sessionId, handleId, roomId}) => await sendSocketStream
   }
 }, o => console.log("joinRoom response", JSON.stringify(o)));
 
-const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) => {
+const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol", sendJanusStream, sendToStreamer}) => {
+  sendStreamer = sendToStreamer;
+  sendStream = sendJanusStream;
   const socket = new Websocket(wsUrl, protocol);
   pull(
     sendStream,
@@ -99,15 +100,6 @@ const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) => {
   console.log(`roomId: ${roomId}`);
   await joinRoom({sessionId, handleId, roomId});
   console.log("room Joined");
-
-  pull(
-    recvNotify.listen(),
-    pull.filter(o => o.transaction === transaction && o.janus !== "ack"),
-    pull.drain(obj => {
-      resolve(resultHandler && resultHandler(obj) || obj);
-    })
-  );
-
 };
 
 module.exports = setupJanusWebSocket;

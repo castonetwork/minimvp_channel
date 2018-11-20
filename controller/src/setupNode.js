@@ -3,9 +3,8 @@ const stringify = require("pull-stringify");
 const Pushable = require("pull-pushable");
 const {tap} = require("pull-tap");
 
-const setupNode = node => {
+const setupNode = ({node, sendToChannel, sendJanusStream}) => {
   node.handle("/controller", (protocol, conn) => {
-    let sendToChannel = Pushable();
     pull(
       sendToChannel,
       stringify(),
@@ -32,7 +31,7 @@ const setupNode = node => {
         pull.map(o => JSON.parse(o.toString())),
         tap(o => console.log("[STREAMER]", o)),
         pull.drain( o=> {
-
+          // sendJanusStream.push
         })
       );
     });
