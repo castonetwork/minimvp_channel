@@ -1,11 +1,9 @@
 const pull = require("pull-stream");
-const Pushable = require("pull-pushable");
 
 const createNode = require("./create-node");
 const mediaServerEndPoints = [process.env.MSPORT || "ws://127.0.0.1:8188"];
 const JanusServer = require("./Janus");
 const setupNode = require("./setupNode");
-const setupJanusWebSocket = require("./setupJanusWebSocket");
 
 // initialize a controller node
 const initNode = async () => {
@@ -14,17 +12,8 @@ const initNode = async () => {
   let node = await createNode();
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
-
-  const sendToStreamer = Pushable();
-  const sendJanusStream = Pushable();
   // setup a libp2p node
-  setupNode({node, sendToStreamer, sendJanusStream});
-  // setup a janus WebSocket interface
-  setupJanusWebSocket({
-    wsUrl: mediaServerEndPoints[0],
-    sendToStreamer,
-    sendJanusStream
-  });
+  setupNode({node, wsUrl: mediaServerEndPoints});
 };
 
 // initialize app
