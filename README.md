@@ -47,6 +47,8 @@ sequenceDiagram
   ct->>st: discovery
   ct->>st: dialProtocol
   st->>ct: handle
+  ct->>ct: createPeerInfo  
+  Note over st, ct: create peerInfo in controller
   ct->>ms: createSession
   ms->>ct: sessionId
   ct->>ms: attach
@@ -57,7 +59,9 @@ sequenceDiagram
   end
   ct->>ms:createRoom
   ms->>ct:roomId
-  ct->>ms:join room 
+  ct->>ms:join room
+  ct->>ct:updatePeerInfo
+  Note over st, ct: update peerInfo /w sessionId, handleId, roomId
   
 ```
 ## Streamer Connect
