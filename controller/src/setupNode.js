@@ -15,26 +15,34 @@ const setupNode = ({node, sendToChannel, sendJanusStream}) => {
       })
     );
   });
+  let peers = {};
   node.on("peer:discovery", peerInfo => {
     const idStr = peerInfo.id.toB58String();
-    // console.log("Discovered: " + idStr);
-    node.dialProtocol(peerInfo, "/streamer", (err, conn) => {
-      if (err) {
-        // console.error("Failed to dial:", err);
-        return;
-      }
-      let sendToStudio = Pushable();
-      pull(
-        sendToStudio,
-        stringify(),
-        conn,
-        pull.map(o => JSON.parse(o.toString())),
-        tap(o => console.log("[STREAMER]", o)),
-        pull.drain( o=> {
-          // sendJanusStream.push
-        })
-      );
-    });
+    if (!peers[idStr]) {
+      peers[idStr] = {
+        isDiscovered: true
+      };
+    }
+    !peers[idStr].isDialed &&
+      node.dialProtocol(peerInfo, "/streamer", (err, conn) => {
+        if (err) {
+          // console.error("Failed to dial:", err);
+          return;
+        }
+        peers[idStr].isDialed = true;
+        console.log(`[streamer] ${idStr} is dialed`);
+        let sendToStudio = Pushable();
+        pull(
+          sendToStudio,
+          stringify(),
+          conn,
+          pull.map(o => JSON.parse(o.toString())),
+          tap(o => console.log("[STREAMER]", o)),
+          pull.drain( o=> {
+            // sendJanusStream.push
+          })
+        );
+      });
   });
 
   node.start(err => {
