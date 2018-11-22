@@ -10,8 +10,8 @@ const initNode = async () => {
   console.log(">> janusInstance instantiated");
   console.log(">> init controller Node");
   let node = await createNode();
-  console.log("node created");
-  console.log("node is ready", node.peerInfo.id.toB58String());
+  console.log(">> node created");
+  console.log(">> node is ready", node.peerInfo.id.toB58String());
   // setup a libp2p node
   setupNode({node, wsUrl: mediaServerEndPoints[0]});
 };
