@@ -57,17 +57,17 @@ const createRoom = async ({sessionId, handleId}) => await sendSocketStream({
 }, o => o && o.plugindata && o.plugindata.data && o.plugindata.data.room);
 
 const joinRoom = async ({sessionId, handleId, roomId}) => await sendSocketStream({
-  janus: "message",
-  session_id: sessionId,
-  handle_id: handleId,
-  body: {
-    request: "join",
-    room: roomId,
-    ptype: "publisher",
-    video: true,
-    audio: true
-  }
-}, o => console.log("joinRoom response", JSON.stringify(o)) || o
+    janus: "message",
+    session_id: sessionId,
+    handle_id: handleId,
+    body: {
+      request: "join",
+      room: roomId,
+      ptype: "publisher",
+      video: true,
+      audio: true
+    }
+  }, o => console.log("joinRoom response", JSON.stringify(o)) || o
 );
 
 const configure = async ({sessionId, handleId, roomId, jsep}) => await sendSocketStream({
@@ -82,10 +82,18 @@ const configure = async ({sessionId, handleId, roomId, jsep}) => await sendSocke
     audio: true
   },
   jsep: jsep
-}, o=> o.jsep);
+}, o => o.jsep);
+
+const addIceCandidate = async ({sessionId, handleId, candidate}) => await sendSocketStream({
+  janus: "trickle",
+  session_id: sessionId,
+  handle_id: handleId,
+  candidate
+}, o => { /* ack only */
+});
 
 const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
-  new Promise(async (resolve, reject)=> {
+  new Promise(async (resolve, reject) => {
     const socket = new Websocket(wsUrl, protocol);
     pull(
       sendStream,
@@ -153,7 +161,7 @@ const setupNode = ({node, wsUrl}) => {
       let sendToStudio = Pushable();
       // setup a janus WebSocket interface
       const roomInfo = await setupJanusWebSocket({wsUrl});
-      peers[idStr] = { ...peers[idStr], roomInfo };
+      peers[idStr] = {...peers[idStr], roomInfo};
       console.log(`[STREAMER] peerInfo:${JSON.stringify(peers[idStr])}`);
       pull(
         sendToStudio,
@@ -164,7 +172,7 @@ const setupNode = ({node, wsUrl}) => {
         pull.map(o => ({...o, ...peers[idStr]})),
         pull.drain(event => {
           const events = {
-            "sendCreateOffer": async ({jsep})=> {
+            "sendCreateOffer": async ({jsep}) => {
               console.log("[CONTROLLER] joining room");
               const joinedRoomInfo = await joinRoom(roomInfo);
               peers[idStr].roomInfo.publisherId = joinedRoomInfo.plugindata.data.id;
@@ -174,6 +182,13 @@ const setupNode = ({node, wsUrl}) => {
               sendToStudio.push({
                 type: "answer",
                 ...jsep
+              })
+            },
+            "sendTrickleCandidate": async ({candidate}) => {
+              console.log("[CONTROLLER] addIceCandidate");
+              await addIceCandidate({
+                candidate,
+                ...roomInfo
               })
             }
           };
