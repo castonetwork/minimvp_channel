@@ -63,13 +63,12 @@ const joinRoom = async ({sessionId, handleId, roomId}) => await sendSocketStream
   body: {
     request: "join",
     room: roomId,
-    type: "publisher",
+    ptype: "publisher",
     video: true,
     audio: true
   }
-}, o => {
-  console.log("joinRoom response", JSON.stringify(o))
-});
+}, o => console.log("joinRoom response", JSON.stringify(o)) || o
+);
 
 const configure = async ({sessionId, handleId, roomId, jsep}) => await sendSocketStream({
   janus: "message",
@@ -115,9 +114,7 @@ const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
       });
     }, 30000);
     const roomId = await createRoom({sessionId, handleId});
-    console.log(`roomId: ${roomId}`);
-    await joinRoom({sessionId, handleId, roomId});
-    console.log("[CONTROLLER] room Joined");
+    console.log(`[CONTROLLER] roomId: ${roomId}`);
     resolve({
       sessionId, handleId, roomId
     });
@@ -168,10 +165,15 @@ const setupNode = ({node, wsUrl}) => {
         pull.drain(event => {
           const events = {
             "sendCreateOffer": async ({jsep})=> {
+              console.log("[CONTROLLER] joining room");
+              const joinedRoomInfo = await joinRoom(roomInfo);
+              peers[idStr].publisherId = joinedRoomInfo.plugindata.data.id;
+              console.log("[CONTROLLER] room Joined");
               const answerSDP = await configure({...roomInfo, jsep});
               console.log("[MEDIASERVER] configured:", answerSDP);
               sendToStudio.push({
-                type: "answer", answerSDP
+                type: "answer",
+                ...jsep
               })
             }
           };

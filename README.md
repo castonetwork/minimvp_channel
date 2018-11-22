@@ -59,7 +59,6 @@ sequenceDiagram
   end
   ct->>ms:createRoom
   ms->>ct:roomId
-  ct->>ms:join room
   ct->>ct:updatePeerInfo
   Note over st, ct: update peerInfo /w sessionId, handleId, roomId
   
@@ -76,6 +75,8 @@ sequenceDiagram
   st->>st: getUserMedia
   st->>st: pc.createOffer
   st->>st: pc.setLocalDescription
+  ct->>ms: join room
+  ms->>ct: update publisherId
   st->>ct: sendCreateOffer
   ct->>ms: configure
   ms->>ct: answerOffer(SDP)
