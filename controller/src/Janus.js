@@ -1,5 +1,6 @@
 const Pushable = require("pull-pushable");
 const spawn = require("child_process").spawn;
+const chalk = require("chalk");
 const janusProcessname =  __dirname + "/bin/janus_standalone/run.sh";
 //const janusCfg = "/opt/janus/etc/janus/janus.cfg";
 const janusArgs = [];
@@ -46,13 +47,9 @@ class Janus {
     };
 
     this._child = spawn(janusProcessname, janusArgs, spawnOptions);
-    console.log("janus: pid=" + this._child.pid);
+    console.log(chalk.yellow.bgBlue("janus"), " pid=" + this._child.pid);
     this._child.stdout.on("data", buffer => {
-      if (buffer.slice(-1) == "\n") {
-        console.log(buffer.subarray(0, buffer.length - 1).toString());
-      } else {
-        console.log(buffer.toString());
-      }
+      console.log(chalk.yellow.bgBlue("janus"), buffer.toString().replace(/\n$/, "").replace("\n", "\n"+chalk.yellow.bgBlue("     ")+" "));
       if (buffer.toString().split("\n").some(o=>o===this.webSocketsThreadStarted)) {
         this.handler.push({
           type: "ready",
