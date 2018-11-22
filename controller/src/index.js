@@ -13,7 +13,7 @@ const initNode = async () => {
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
   // setup a libp2p node
-  setupNode({node, wsUrl: mediaServerEndPoints});
+  setupNode({node, wsUrl: mediaServerEndPoints[0]});
 };
 
 // initialize app
