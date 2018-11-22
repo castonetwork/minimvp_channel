@@ -167,7 +167,7 @@ const setupNode = ({node, wsUrl}) => {
             "sendCreateOffer": async ({jsep})=> {
               console.log("[CONTROLLER] joining room");
               const joinedRoomInfo = await joinRoom(roomInfo);
-              peers[idStr].publisherId = joinedRoomInfo.plugindata.data.id;
+              peers[idStr].roomInfo.publisherId = joinedRoomInfo.plugindata.data.id;
               console.log("[CONTROLLER] room Joined");
               const answerSDP = await configure({...roomInfo, jsep});
               console.log("[MEDIASERVER] configured:", answerSDP);
