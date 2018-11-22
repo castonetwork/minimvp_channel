@@ -2,6 +2,7 @@
     "plugins": [
         ["transform-runtime",
         {
+            "corejs":true,
             "polyfill": true,
             "regenerator": true
         }]

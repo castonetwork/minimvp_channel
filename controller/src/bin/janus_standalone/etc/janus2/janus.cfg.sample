@@ -4,10 +4,10 @@
 ; and, if needed, shared apisecret and/or token authentication mechanism
 ; between application(s) and Janus.
 [general]
-configs_folder = ./etc/janus			; Configuration files folder
-plugins_folder = ./lib/janus/plugins		; Plugins folder
-transports_folder = ./lib/janus/transports	; Transports folder
-events_folder = ./lib/janus/events			; Event handlers folder
+configs_folder = /usr/local/janus/etc/janus			; Configuration files folder
+plugins_folder = /usr/local/janus/lib/janus/plugins		; Plugins folder
+transports_folder = /usr/local/janus/lib/janus/transports	; Transports folder
+events_folder = /usr/local/janus/lib/janus/events			; Event handlers folder
 ;log_to_stdout = false				; Whether the Janus output should be written
 									; to stdout or not (default=true)
 ;log_to_file = /path/to/janus.log	; Whether to use a log file or not
@@ -36,7 +36,7 @@ debug_level = 4				; Debug/logging level, valid values are 0-7
 ;							without this, the Admin API MUST
 ;							be enabled, as tokens are added and removed
 ;							through messages sent there.
-admin_secret = castofever	; String that all Janus requests must contain
+admin_secret = janusoverlord	; String that all Janus requests must contain
 ;								  to be accepted/authorized by the admin/monitor.
 ;								  only needed if you enabled the admin API
 ;								  in any of the available transports.
@@ -54,8 +54,8 @@ admin_secret = castofever	; String that all Janus requests must contain
 ;
 ;reclaim_session_timeout = 0		; How long (in seconds) we should wait for a
 ;							janus session to be reclaimed after the transport
-;							is gone. After the transport is gone, a session
-;							times out when no request is received for
+;							is gone. After the transport is gone, a session 
+;							times out when no request is received for 
 ;							reclaim_session_timeout seconds (default=0s).
 ;							Setting this to 0 will disable the timeout
 ;							mechanism, and sessions will be destroyed immediately
@@ -81,8 +81,8 @@ admin_secret = castofever	; String that all Janus requests must contain
 
 ; Certificate and key to use for DTLS (and passphrase if needed).
 [certificates]
-cert_pem = ./share/janus/certs/mycert.pem
-cert_key = ./share/janus/certs/mycert.key
+cert_pem = /usr/local/janus/share/janus/certs/mycert.pem
+cert_key = /usr/local/janus/share/janus/certs/mycert.key
 ;cert_pwd = secretpassphrase
 
 
@@ -104,7 +104,7 @@ cert_key = ./share/janus/certs/mycert.key
 ;ipv6 = true
 ;max_nack_queue = 500
 ;rfc_4588 = yes
-rtp_port_range = 30400-30500
+;rtp_port_range = 20000-40000
 ;dtls_mtu = 1200
 ;no_media_timer = 1
 ;dtls_timeout = 500
@@ -125,7 +125,7 @@ rtp_port_range = 30400-30500
 ; you can also enable ICE-TCP support (beware that it currently *only*
 ; works if you enable ICE Lite as well), choose which interfaces should
 ; be used for gathering candidates, and enable or disable the
-; internal libnice debugging, if needed.
+; internal libnice debugging, if needed. 
 [nat]
 ;stun_server = stun.voip.eutelia.it
 ;stun_port = 3478
