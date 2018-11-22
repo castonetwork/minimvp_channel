@@ -2,6 +2,14 @@ const pull = require("pull-stream");
 const stringify = require("pull-stringify");
 const Pushable = require("pull-pushable");
 const {tap} = require("pull-tap");
+const Websocket = require("ws");
+const wsSource = require("pull-ws/source");
+const wsSink = require("pull-ws");
+const chance = require("chance").Chance();
+const Notify = require("pull-notify");
+
+const recvNotify = Notify();
+const sendStream = Pushable();
 
 /* janus websocket Interface */
 const sendSocketStream = (obj, resultHandler) => new Promise((resolve, reject) => {
@@ -63,14 +71,13 @@ const joinRoom = async ({sessionId, handleId, roomId}) => await sendSocketStream
   console.log("joinRoom response", JSON.stringify(o))
 });
 
-const configure = async ({sessionId, handleId}) => await sendSocketStream({
+const configure = async ({sessionId, handleId, roomId}) => await sendSocketStream({
   janus: "message",
   session_id: this._sessionId,
   handle_id: handleId,
-  transaction: tId,
   body: {
     request: "configure",
-    room: this._room.id,
+    room: roomId,
     ptype: "publisher",
     video: true,
     audio: true
@@ -79,7 +86,6 @@ const configure = async ({sessionId, handleId}) => await sendSocketStream({
 
 const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
   new Promise(async (resolve, reject)=> {
-    const sendStream = Pushable();
     const socket = new Websocket(wsUrl, protocol);
     pull(
       sendStream,
@@ -139,7 +145,7 @@ const setupNode = ({node, wsUrl}) => {
       };
     }
     !peers[idStr].isDialed &&
-    node.dialProtocol(peerInfo, "/streamer", (err, conn) => {
+    node.dialProtocol(peerInfo, "/streamer", async (err, conn) => {
       if (err) {
         // console.error("Failed to dial:", err);
         return;
@@ -149,7 +155,8 @@ const setupNode = ({node, wsUrl}) => {
       let sendToStudio = Pushable();
       // setup a janus WebSocket interface
       const roomInfo = await setupJanusWebSocket({wsUrl});
-      peers[idstr] = { ...peers[idstr], roomInfo };
+      peers[idStr] = { ...peers[idStr], roomInfo };
+      console.log(`[STREAMER] peerInfo:${JSON.stringify(peers[idStr])}`);
       pull(
         sendToStudio,
         stringify(),
@@ -159,7 +166,12 @@ const setupNode = ({node, wsUrl}) => {
         pull.map(o => ({...o, ...peers[idStr]})),
         pull.drain(event => {
           const events = {
-            "sendCreateOffer": configure
+            "sendCreateOffer": async ()=> {
+              const jsep = await configure(roomInfo);
+              sendToStudio.push({
+                type: "answer", jsep
+              })
+            }
           };
           events[event.request] && events[event.request](event);
           // sendJanusStream.push
