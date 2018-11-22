@@ -71,9 +71,9 @@ const joinRoom = async ({sessionId, handleId, roomId}) => await sendSocketStream
   console.log("joinRoom response", JSON.stringify(o))
 });
 
-const configure = async ({sessionId, handleId, roomId}) => await sendSocketStream({
+const configure = async ({sessionId, handleId, roomId, jsep}) => await sendSocketStream({
   janus: "message",
-  session_id: this._sessionId,
+  session_id: sessionId,
   handle_id: handleId,
   body: {
     request: "configure",
@@ -81,7 +81,8 @@ const configure = async ({sessionId, handleId, roomId}) => await sendSocketStrea
     ptype: "publisher",
     video: true,
     audio: true
-  }
+  },
+  jsep: jsep
 }, o=> o.jsep);
 
 const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
@@ -116,7 +117,7 @@ const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
     const roomId = await createRoom({sessionId, handleId});
     console.log(`roomId: ${roomId}`);
     await joinRoom({sessionId, handleId, roomId});
-    console.log("room Joined");
+    console.log("[CONTROLLER] room Joined");
     resolve({
       sessionId, handleId, roomId
     });
@@ -166,10 +167,11 @@ const setupNode = ({node, wsUrl}) => {
         pull.map(o => ({...o, ...peers[idStr]})),
         pull.drain(event => {
           const events = {
-            "sendCreateOffer": async ()=> {
-              const jsep = await configure(roomInfo);
+            "sendCreateOffer": async ({jsep})=> {
+              const answerSDP = await configure({...roomInfo, jsep});
+              console.log("[MEDIASERVER] configured:", answerSDP);
               sendToStudio.push({
-                type: "answer", jsep
+                type: "answer", answerSDP
               })
             }
           };
@@ -185,7 +187,7 @@ const setupNode = ({node, wsUrl}) => {
       console.error(err);
       return;
     }
-    console.log(node.peerInfo.multiaddrs.toArray().map(o => o.toString()));
+    console.log(">> ", node.peerInfo.multiaddrs.toArray().map(o => o.toString()));
   });
 };
 
