@@ -8,9 +8,21 @@ const wsSink = require("pull-ws");
 const {sendStream, recvNotify} = require("./pushnNotify");
 const {keepAlive, createSession, attach, createRoom, joinRoom, configure, addIceCandidate} = require("./socketStream");
 
+const socketSingleTon = (()=> {
+  let socket;
+  return {
+    getSocket: (wsUrl, protocol)=> {
+      if (!socket) {
+        socket = new Websocket(wsUrl, protocol);
+      }
+      return socket;
+    }
+  }
+})();
+
 const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
   new Promise(async (resolve, reject) => {
-    const socket = new Websocket(wsUrl, protocol);
+    const socket = socketSingleTon.getSocket(wsUrl, protocol);
     pull(
       sendStream,
       pull.map(JSON.stringify),
@@ -29,11 +41,12 @@ const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
     const sessionId = await createSession();
     const handleId = await attach(sessionId);
     /* generate keepalive */
-    const timerId = setInterval(() => keepAlive({sessionId, handleId}), 30000);
+    const timerHandler = setInterval(() => keepAlive({sessionId, handleId}), 30000);
     const roomId = await createRoom({sessionId, handleId});
     console.log(`[CONTROLLER] roomId: ${roomId}`);
+    socket.on('close', ()=> clearInterval(timerHandler));
     resolve({
-      sessionId, handleId, roomId, timerId
+      sessionId, handleId, roomId
     });
   });
 
@@ -51,7 +64,7 @@ const setupNode = ({node, wsUrl}) => {
       pull.drain(event => {
         const events = {
           "requestPeerInfo": o => {
-            sendToChannel({
+            sendToChannel.push({
               type: "sendChannelList",
               peers
             });
@@ -80,7 +93,6 @@ const setupNode = ({node, wsUrl}) => {
       // setup a janus WebSocket interface
       const roomInfo = await setupJanusWebSocket({wsUrl});
       peers[idStr] = {...peers[idStr], roomInfo};
-      console.log(`[STREAMER] peerInfo:${JSON.stringify(peers[idStr])}`);
       pull(
         pushStreamer,
         stringify(),
@@ -99,7 +111,7 @@ const setupNode = ({node, wsUrl}) => {
               console.log("[MEDIASERVER] configured:", answerSDP);
               pushStreamer.push({
                 type: "answer",
-                ...jsep
+                jsep: answerSDP.jsep
               })
             },
             "sendTrickleCandidate": async ({candidate}) => {
