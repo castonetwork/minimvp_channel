@@ -1,5 +1,4 @@
-import "babel-polyfill";
-
+import "@babel/polyfill";
 const pull = require("pull-stream");
 const combineLatest = require("pull-combine-latest");
 const Pushable = require("pull-pushable");
@@ -70,7 +69,7 @@ const domReady = () => {
 const handleStreamer = (protocol, conn) => {
   document.getElementById("btnReady").classList.remove("connecting");
   document.getElementById("btnReady").classList.remove("button-outline");
-  console.log("dialed!!", protocol);
+  console.log("dialed!!", protocol, conn);
   pull(sendStream,
     pull.map(o => JSON.stringify(o)),
     conn,
