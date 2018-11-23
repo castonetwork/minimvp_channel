@@ -33,7 +33,7 @@ const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
     const roomId = await createRoom({sessionId, handleId});
     console.log(`[CONTROLLER] roomId: ${roomId}`);
     resolve({
-      sessionId, handleId, roomId
+      sessionId, handleId, roomId, timerId
     });
   });
 
@@ -76,13 +76,13 @@ const setupNode = ({node, wsUrl}) => {
       }
       peers[idStr].isDialed = true;
       console.log(`[STREAMER] ${idStr} is dialed`);
-      let sendToStudio = Pushable();
+      let pushStreamer = Pushable();
       // setup a janus WebSocket interface
       const roomInfo = await setupJanusWebSocket({wsUrl});
       peers[idStr] = {...peers[idStr], roomInfo};
       console.log(`[STREAMER] peerInfo:${JSON.stringify(peers[idStr])}`);
       pull(
-        sendToStudio,
+        pushStreamer,
         stringify(),
         conn,
         pull.map(o => JSON.parse(o.toString())),
@@ -97,7 +97,7 @@ const setupNode = ({node, wsUrl}) => {
               console.log("[CONTROLLER] room Joined");
               const answerSDP = await configure({...roomInfo, jsep});
               console.log("[MEDIASERVER] configured:", answerSDP);
-              sendToStudio.push({
+              pushStreamer.push({
                 type: "answer",
                 ...jsep
               })
