@@ -35,7 +35,12 @@ const processEvents = event => {
   console.log(event);
   console.log(event.type);
   const events = {
-    responseOfferSDP: async ({ jsep }) => {
+    "getPeerList": ({peers})=> {
+      for (let peer in peers) {
+        updateChannelInfo(peer)
+      }
+    },
+    "responseOfferSDP": async ({ jsep }) => {
       let pc = new RTCPeerConnection(configuration);
 
       pc.onicecandidate = event => {
@@ -85,7 +90,7 @@ const processEvents = event => {
 };
 
 const initApp = () => {
-  let boradCasters = {};
+  let streamers = {};
   console.log("init app");
   createNode.then(node => {
     window.currentNode = node;
@@ -94,16 +99,17 @@ const initApp = () => {
 
       console.log("Discovered: " + idStr);
 
-      !boradCasters[idStr] &&
+      !streamers[idStr] &&
         node.dialProtocol(peerInfo, "/controller", (err, conn) => {
           if (err) {
             // console.error("Failed to dial:", err);
             return;
           }
-          boradCasters[idStr] = true;
+          streamers[idStr] = true;
           updateChannelInfo({ id: idStr });
-          pull(sendController, stringify(), conn);
           pull(
+            sendController,
+            stringify(),
             conn,
             pull.map(o => window.JSON.parse(o.toString())),
             pull.drain(o => {
@@ -115,6 +121,10 @@ const initApp = () => {
                 .catch(console.error);
             })
           );
+          sendController({
+            type: "requestPeerInfo",
+            peerId: node.peerInfo.id.toB58String()
+          })
         });
     });
     node.start(err => {

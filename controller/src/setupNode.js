@@ -48,7 +48,16 @@ const setupNode = ({node, wsUrl}) => {
       conn,
       pull.map(o => JSON.parse(o.toString())),
       tap(console.log),
-      pull.drain(o => {
+      pull.drain(event => {
+        const events = {
+          "requestPeerInfo": o => {
+            sendToChannel({
+              type: "sendChannelList",
+              peers
+            });
+          }
+        };
+        events[event.type] && events[event.type](event);
       })
     );
   });
