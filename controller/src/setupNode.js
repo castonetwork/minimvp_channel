@@ -87,7 +87,7 @@ const setupNode = ({node, wsUrl}) => {
         conn,
         pull.map(o => JSON.parse(o.toString())),
         tap(o => console.log("[STREAMER]", o)),
-        pull.map(o => ({...o, ...peers[idStr]})),
+        pull.map(o => ({...o, ...roomInfo})),
         pull.drain(event => {
           const events = {
             "sendCreateOffer": async ({jsep}) => {
