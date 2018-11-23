@@ -1,6 +1,4 @@
-import "babel-polyfill";
 import "setimmediate";
-
 const pull = require("pull-stream");
 const Pushable = require("pull-pushable");
 const { tap } = require("pull-tap");
