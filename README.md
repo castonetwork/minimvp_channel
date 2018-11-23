@@ -44,8 +44,10 @@ sequenceDiagram
   participant ct as controller
   participant ms as mediaServer
   participant ch as channel
+  loop peer discovery
   ct->>st: discovery
   ct->>st: dialProtocol
+  end
   st->>ct: handle
   ct->>ct: createPeerInfo  
   Note over st, ct: create peerInfo in controller
@@ -95,9 +97,13 @@ sequenceDiagram
   participant ct as controller
   participant ms as mediaServer
   participant ch as channel
+  loop peer library
   ch->>ct: discovery
   ch->>ct: dialProtocol
+  end
   ct->>ch: handle
+  ch->>ct: requestPeerInfo
+  ct->>ch: sendChannelList
   ct->>ms: createSession
   ms->>ct: sessionId
   ct->>ms: attach
