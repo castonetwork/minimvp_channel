@@ -5,92 +5,8 @@ const {tap} = require("pull-tap");
 const Websocket = require("ws");
 const wsSource = require("pull-ws/source");
 const wsSink = require("pull-ws");
-const chance = require("chance").Chance();
-const Notify = require("pull-notify");
-
-const recvNotify = Notify();
-const sendStream = Pushable();
-
-/* janus websocket Interface */
-const sendSocketStream = (obj, resultHandler) => new Promise((resolve, reject) => {
-  const transaction = chance.guid();
-  sendStream.push({...obj, transaction});
-  pull(
-    recvNotify.listen(),
-    pull.filter(o => o.transaction === transaction && o.janus !== "ack"),
-    pull.drain(obj => {
-      resolve(resultHandler && resultHandler(obj) || obj);
-    })
-  );
-  /* TODO: success, failure */
-});
-
-const createSession = async () => await sendSocketStream({
-  janus: "create"
-}, o => o && o.data && o.data.id);
-
-const attach = async sessionId => await sendSocketStream({
-  janus: "attach",
-  session_id: sessionId,
-  plugin: "janus.plugin.videoroom"
-}, o => o && o.data && o.data.id);
-
-const createRoom = async ({sessionId, handleId}) => await sendSocketStream({
-  janus: "message",
-  session_id: sessionId,
-  handle_id: handleId,
-  body: {
-    request: "create",
-    description: "remon",
-    bitrate: 102400,
-    publishers: 1,
-    fir_freq: 1,
-    is_private: false,
-    audiocodec: "opus",
-    videocodec: "H264",
-    video: true,
-    audio: true,
-    notify_joining: true,
-    playoutdelay_ext: false,
-    videoorient_ext: false
-  }
-}, o => o && o.plugindata && o.plugindata.data && o.plugindata.data.room);
-
-const joinRoom = async ({sessionId, handleId, roomId}) => await sendSocketStream({
-    janus: "message",
-    session_id: sessionId,
-    handle_id: handleId,
-    body: {
-      request: "join",
-      room: roomId,
-      ptype: "publisher",
-      video: true,
-      audio: true
-    }
-  }, o => console.log("joinRoom response", JSON.stringify(o)) || o
-);
-
-const configure = async ({sessionId, handleId, roomId, jsep}) => await sendSocketStream({
-  janus: "message",
-  session_id: sessionId,
-  handle_id: handleId,
-  body: {
-    request: "configure",
-    room: roomId,
-    ptype: "publisher",
-    video: true,
-    audio: true
-  },
-  jsep: jsep
-}, o => o.jsep);
-
-const addIceCandidate = async ({sessionId, handleId, candidate}) => await sendSocketStream({
-  janus: "trickle",
-  session_id: sessionId,
-  handle_id: handleId,
-  candidate
-}, o => { /* ack only */
-});
+const {sendStream, recvNotify} = require("./pushnNotify");
+const {keepAlive, createSession, attach, createRoom, joinRoom, configure, addIceCandidate} = require("./socketStream");
 
 const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
   new Promise(async (resolve, reject) => {
@@ -113,14 +29,7 @@ const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
     const sessionId = await createSession();
     const handleId = await attach(sessionId);
     /* generate keepalive */
-    const timerId = setInterval(() => {
-      sendStream.push({
-        janus: "keepalive",
-        session_id: sessionId,
-        handle_id: handleId,
-        transaction: chance.guid()
-      });
-    }, 30000);
+    const timerId = setInterval(() => keepAlive({sessionId, handleId}), 30000);
     const roomId = await createRoom({sessionId, handleId});
     console.log(`[CONTROLLER] roomId: ${roomId}`);
     resolve({
@@ -130,6 +39,7 @@ const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
 
 /* setup Node */
 const setupNode = ({node, wsUrl}) => {
+  let peers = {};
   node.handle("/controller", (protocol, conn) => {
     const sendToChannel = Pushable();
     pull(
@@ -142,7 +52,6 @@ const setupNode = ({node, wsUrl}) => {
       })
     );
   });
-  let peers = {};
   node.on("peer:discovery", peerInfo => {
     const idStr = peerInfo.id.toB58String();
     if (!peers[idStr]) {
