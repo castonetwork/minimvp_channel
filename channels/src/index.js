@@ -121,7 +121,7 @@ const initApp = () => {
                 .catch(console.error);
             })
           );
-          sendController({
+          sendController.push({
             type: "requestPeerInfo",
             peerId: node.peerInfo.id.toB58String()
           })
