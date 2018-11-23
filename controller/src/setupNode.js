@@ -44,6 +44,7 @@ const setupJanusWebSocket = async ({wsUrl, protocol = "janus-protocol"}) =>
     const timerHandler = setInterval(() => keepAlive({sessionId, handleId}), 30000);
     const roomId = await createRoom({sessionId, handleId});
     console.log(`[CONTROLLER] roomId: ${roomId}`);
+    /* TODO: timerHanbdler가 외부 요인에 의해 reset 되야하는 경우 구현 */
     socket.on('close', ()=> clearInterval(timerHandler));
     resolve({
       sessionId, handleId, roomId
