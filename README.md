@@ -77,9 +77,9 @@ sequenceDiagram
   st->>st: getUserMedia
   st->>st: pc.createOffer
   st->>st: pc.setLocalDescription
+  st->>ct: sendCreateOffer
   ct->>ms: join room
   ms->>ct: update publisherId
-  st->>ct: sendCreateOffer
   ct->>ms: configure
   ms->>ct: answerOffer(SDP)
   ct->>st: answerOffer(SDP)
