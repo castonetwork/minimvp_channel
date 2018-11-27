@@ -30,5 +30,6 @@
     "pull-stringify": "^2.0.0",
     "pull-tap": "^1.1.1",
     "websocket": "^1.0.28"
-  }
+  },
+  "devDependencies": {}
 }

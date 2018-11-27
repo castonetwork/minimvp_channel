@@ -1,0 +1,24 @@
+.channelInfo {
+  width: 16em;
+  height: 9em;
+  border: solid gray 1px;
+}
+.descriptionContainer {
+  display: flex;
+}
+
+dl {
+  display: flex;
+}
+dd {
+  border: solid #efefef 1px;
+  height: 100%;
+}
+.info {
+  padding-left: 0.5em;
+  height: 100%;
+}
+
+.avatar {
+  height: 80px;
+}
