@@ -32,7 +32,7 @@ const updateChannelInfo = info => {
   }
 };
 
-const processEvents = event => {
+const processEvents = async event => {
   console.log("processEvents");
   console.log(event);
   console.log(event.type);
@@ -81,6 +81,9 @@ const processEvents = event => {
       // get a local stream, show it in a self-view and add it to be sent
       //stream.getTracks().forEach(track => pc.addTrack(track, stream));
       //document.getElementById("studio").srcObject = stream;
+    },
+    "sendChannelList": ({peers})=> {
+
     }
   };
   if (events[event.type]) return events[event.type](event);
@@ -113,13 +116,15 @@ const initApp = async () => {
         stringify(),
         conn,
         pull.map(o => window.JSON.parse(o.toString())),
-        pull.drain(o => {
+        pull.drain(async o => {
           console.log("Drained", o);
-          processEvents(o)
-            .then(x => {
-              console.log("setRemoteDescription!");
-            })
-            .catch(console.error);
+          try {
+            await processEvents(o);
+          } catch(e) {
+            console.error("[event]", e);
+          } finally {
+            console.log("setRemoteDescription");
+          }
         })
       );
       sendController.push({
