@@ -1,11 +1,12 @@
 import "@babel/polyfill";
 import "setimmediate";
+
 const pull = require("pull-stream");
 const Pushable = require("pull-pushable");
-const { tap } = require("pull-tap");
+const {tap} = require("pull-tap");
 const stringify = require("pull-stringify");
 const configuration = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  iceServers: [{urls: "stun:stun.l.google.com:19302"}]
 };
 
 let sendController = Pushable();
@@ -36,12 +37,12 @@ const processEvents = event => {
   console.log(event);
   console.log(event.type);
   const events = {
-    "getPeerList": ({peers})=> {
+    "getPeerList": ({peers}) => {
       for (let peer in peers) {
         updateChannelInfo(peer)
       }
     },
-    "responseOfferSDP": async ({ jsep }) => {
+    "responseOfferSDP": async ({jsep}) => {
       let pc = new RTCPeerConnection(configuration);
 
       pc.onicecandidate = event => {
@@ -54,7 +55,7 @@ const processEvents = event => {
         }
       };
 
-      pc.oniceconnectionstatechange = function(e) {
+      pc.oniceconnectionstatechange = function (e) {
         console.log("[ICE STATUS] ", pc.iceConnectionState);
       };
       // let the "negotiationneeded" event trigger offer generation
@@ -90,49 +91,47 @@ const processEvents = event => {
   }
 };
 
-const initApp = () => {
+const initApp = async () => {
   let streamers = {};
   console.log("init app");
-  createNode.then(node => {
-    window.currentNode = node;
-    node.on("peer:discovery", peerInfo => {
-      const idStr = peerInfo.id.toB58String();
+  const node = await createNode();
+  node.on("peer:discovery", peerInfo => {
+    const idStr = peerInfo.id.toB58String();
 
-      console.log("Discovered: " + idStr);
+    console.log("Discovered: " + idStr);
 
-      !streamers[idStr] &&
-        node.dialProtocol(peerInfo, "/controller", (err, conn) => {
-          if (err) {
-            // console.error("Failed to dial:", err);
-            return;
-          }
-          streamers[idStr] = true;
-          updateChannelInfo({ id: idStr });
-          pull(
-            sendController,
-            stringify(),
-            conn,
-            pull.map(o => window.JSON.parse(o.toString())),
-            pull.drain(o => {
-              console.log("Drained", o);
-              processEvents(o)
-                .then(x => {
-                  console.log("setRemoteDescription!");
-                })
-                .catch(console.error);
+    !streamers[idStr] &&
+    node.dialProtocol(peerInfo, "/controller", (err, conn) => {
+      if (err) {
+        // console.error("Failed to dial:", err);
+        return;
+      }
+      streamers[idStr] = true;
+      updateChannelInfo({id: idStr});
+      pull(
+        sendController,
+        stringify(),
+        conn,
+        pull.map(o => window.JSON.parse(o.toString())),
+        pull.drain(o => {
+          console.log("Drained", o);
+          processEvents(o)
+            .then(x => {
+              console.log("setRemoteDescription!");
             })
-          );
-          sendController.push({
-            type: "requestPeerInfo",
-            peerId: node.peerInfo.id.toB58String()
-          })
-        });
+            .catch(console.error);
+        })
+      );
+      sendController.push({
+        type: "requestPeerInfo",
+        peerId: node.peerInfo.id.toB58String()
+      })
     });
-    node.start(err => {
-      if (err) throw err;
-      console.log("node is ready", node.peerInfo.id.toB58String());
-      console.log(node.peerInfo.multiaddrs.toArray().map(o => o.toString()));
-    });
+  });
+  node.start(err => {
+    if (err) throw err;
+    console.log("node is ready", node.peerInfo.id.toB58String());
+    console.log(node.peerInfo.multiaddrs.toArray().map(o => o.toString()));
   });
 };
 //document.addEventListener("DOMContentLoaded", initApp);
