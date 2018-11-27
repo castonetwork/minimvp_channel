@@ -129,7 +129,14 @@ const setupNode = ({node, wsUrl}) => {
       );
     });
   });
-
+  node.on("peer:connect", peerInfo => {
+    console.log("[CONTROLLER] peer connected:", peerInfo.id.toB58String());
+  });
+  node.on("peer:disconnect", peerInfo => {
+    console.log("[CONTROLLER] peer disconnected:", peerInfo.id.toB58String());
+    const idStr = peerInfo.id.toB58String();
+    idStr && peers[idStr] && delete peers[idStr];
+  });
   node.start(err => {
     if (err) {
       console.error(err);
