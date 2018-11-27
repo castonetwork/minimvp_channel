@@ -1,4 +1,5 @@
 import "@babel/polyfill";
+
 const pull = require("pull-stream");
 const combineLatest = require("pull-combine-latest");
 const Pushable = require("pull-pushable");
@@ -12,6 +13,23 @@ const btnReadyClickStream = Pushable();
 const sendStream = Pushable();
 const networkReadyNotify = Notify();
 
+/* watch network Ready Status */
+pull(
+  networkReadyNotify.listen(),
+  pull.filter(o => o),
+  pull.drain(() => {
+    document.getElementById("btnReady").classList.remove("connecting");
+    document.getElementById("btnReady").classList.remove("button-outline");
+  })
+);
+pull(
+  networkReadyNotify.listen(),
+  pull.filter(o => !o),
+  pull.drain(() => {
+    document.getElementById("btnReady").classList.add("connecting");
+    document.getElementById("btnReady").classList.add("button-outline");
+  })
+);
 /* peerConnection */
 let pc = new RTCPeerConnection(null);
 // send any ice candidates to the other peer
@@ -37,26 +55,29 @@ const sendCreateOfferStream = async () =>
   pull(
     combineLatest([btnReadyClickStream, networkReadyNotify.listen()]),
     pull.drain(async o => {
-      try {
-        // get a local stream, show it in a self-view and add it to be sent
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: true
-        });
-        stream.getTracks().some(track => pc.addTrack(track, stream));
-        document.getElementById("studio").srcObject = stream;
+      console.log("combineLatest", o);
+      if (o[1]) {
         try {
-          await pc.setLocalDescription(await pc.createOffer());
-          console.log("localDescription", pc.localDescription);
-          sendStream.push({
-            request: "sendCreateOffer",
-            jsep: pc.localDescription
+          // get a local stream, show it in a self-view and add it to be sent
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+            video: true
           });
+          stream.getTracks().some(track => pc.addTrack(track, stream));
+          document.getElementById("studio").srcObject = stream;
+          try {
+            await pc.setLocalDescription(await pc.createOffer());
+            console.log("localDescription", pc.localDescription);
+            sendStream.push({
+              request: "sendCreateOffer",
+              jsep: pc.localDescription
+            });
+          } catch (err) {
+            console.error(err);
+          }
         } catch (err) {
           console.error(err);
         }
-      } catch (err) {
-        console.error(err);
       }
     })
   );
@@ -67,8 +88,6 @@ const domReady = () => {
 };
 
 const handleStreamer = (protocol, conn) => {
-  document.getElementById("btnReady").classList.remove("connecting");
-  document.getElementById("btnReady").classList.remove("button-outline");
   console.log("dialed!!", protocol, conn);
   pull(sendStream,
     pull.map(o => JSON.stringify(o)),
@@ -97,6 +116,13 @@ const initApp = async () => {
   console.log("node is ready", node.peerInfo.id.toB58String());
 
   node.handle("/streamer", handleStreamer);
+  node.on("peer:connect", peerInfo => {
+    console.log("peer connected:", peerInfo.id.toB58String());
+  });
+  node.on("peer:disconnect", peerInfo => {
+    console.log("peer disconnected:", peerInfo.id.toB58String());
+    networkReadyNotify(false);
+  });
   node.start(err => {
     if (err) {
       console.error(err);
