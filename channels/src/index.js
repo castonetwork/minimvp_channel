@@ -128,11 +128,24 @@ const initApp = async () => {
       })
     });
   });
+  node.on("peer:connect", peerInfo => {
+    console.log("connected", peerInfo.id.toB58String())
+  });
+  node.on("peer:disconnect", peerInfo => {
+    const id = peerInfo.id.toB58String();
+    console.log("disconnected", id)
+    const element = document.getElementById(id);
+    element && element.remove();
+    delete streamers[id];
+  });
   node.start(err => {
     if (err) throw err;
     console.log("node is ready", node.peerInfo.id.toB58String());
     console.log(node.peerInfo.multiaddrs.toArray().map(o => o.toString()));
   });
+  node.on("peer", peerInfo => {
+    console.log("peer-discovery", peerInfo.id.toB58String());
+  })
 };
 //document.addEventListener("DOMContentLoaded", initApp);
 initApp();

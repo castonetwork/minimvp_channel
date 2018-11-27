@@ -2,6 +2,7 @@
 
 const libp2p = require("libp2p");
 const WSStar = require("libp2p-websocket-star");
+const Mplex = require("libp2p-mplex");
 
 class Node extends libp2p {
   constructor(_options) {
@@ -9,6 +10,7 @@ class Node extends libp2p {
     const defaults = {
       modules: {
         transport: [wsStar],
+        streamMuxer: [Mplex],
         peerDiscovery: [wsStar.discovery]
       },
     };
