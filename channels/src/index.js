@@ -83,7 +83,11 @@ const processEvents = async event => {
       //document.getElementById("studio").srcObject = stream;
     },
     "sendChannelList": ({peers})=> {
-
+      for (let peer in peers) {
+        if (peers[peer] && peers[peer].roomInfo) {
+          console.log("GOT PEER", peers[peer].roomInfo);
+        }
+      }
     }
   };
   if (events[event.type]) return events[event.type](event);
