@@ -23,6 +23,7 @@
     "parcel": "^1.10.3"
   },
   "dependencies": {
+    "@babel/polyfill": "^7.0.0",
     "async": "^2.6.1",
     "libp2p": "^0.23.1",
     "libp2p-mplex": "^0.8.2",
@@ -37,7 +38,6 @@
     "pull-stream": "^3.6.9",
     "pull-stringify": "^2.0.0",
     "pull-tap": "^1.1.1",
-    "setimmediate": "^1.0.5",
-    "babel-polyfill": "^6.26.0"
+    "setimmediate": "^1.0.5"
   }
 }

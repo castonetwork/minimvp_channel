@@ -1,3 +1,4 @@
+import "babel-polyfill";
 import "setimmediate";
 const pull = require("pull-stream");
 const Pushable = require("pull-pushable");
@@ -84,7 +85,7 @@ const processEvents = event => {
   if (events[event.type]) return events[event.type](event);
   else {
     return new Promise((resolve, reject) => {
-      reject("No processEvent");
+      reject("No processEvent", event.type);
     });
   }
 };
