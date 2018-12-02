@@ -10,7 +10,7 @@
 dl {
   display: flex;
 }
-dd {
+dd.item {
   border: solid #efefef 1px;
   height: 100%;
 }
@@ -21,4 +21,8 @@ dd {
 
 .avatar {
   height: 80px;
+}
+
+dd.noItem {
+  border: none;
 }

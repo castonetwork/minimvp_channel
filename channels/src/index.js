@@ -12,26 +12,6 @@ const configuration = {
 let sendController = Pushable();
 window.pull = pull;
 const createNode = require("./create-node");
-const updateChannelInfo = info => {
-  console.log("info", info);
-  /* check id */
-  const infoDiv = document.getElementById(info.id);
-  if (infoDiv) {
-    infoDiv.textContent = window.JSON.stringify(info);
-  } else {
-    const dom = document.createElement("div");
-    dom.textContent = window.JSON.stringify(info);
-    dom.setAttribute("id", info.id);
-    document.body.appendChild(dom);
-    dom.addEventListener("click", e => {
-      console.log("send request OFFER");
-      sendController.push({
-        request: "requestOfferSDP"
-      });
-    });
-  }
-};
-
 const processEvents = async event => {
   console.log("processEvents");
   console.log(event);
@@ -101,6 +81,12 @@ const processEvents = async event => {
 const initApp = async () => {
   let streamers = {};
   console.log("init app");
+
+  /* clone listDOM */
+  const listDOM = document.querySelector('dd.item');
+  const channelItem = listDOM.cloneNode(true);
+  listDOM.remove();
+
   const node = await createNode();
   node.on("peer:discovery", peerInfo => {
     const idStr = peerInfo.id.toB58String();
@@ -114,7 +100,20 @@ const initApp = async () => {
         return;
       }
       streamers[idStr] = true;
-      updateChannelInfo({id: idStr});
+      const item = channelItem.cloneNode(true);
+      item.setAttribute("id", idStr);
+      item.addEventListener("click", e => {
+        console.log("send request OFFER");
+        sendController.push({
+          request: "requestOfferSDP"
+        });
+      });
+      if (!document.getElementById(idStr)) {
+        document.querySelector("dl").appendChild(item);
+        document.querySelector("dd.noItem").remove();
+      } else {
+        /* update info */
+      }
       pull(
         sendController,
         stringify(),
@@ -142,9 +141,17 @@ const initApp = async () => {
   });
   node.on("peer:disconnect", peerInfo => {
     const id = peerInfo.id.toB58String();
-    console.log("disconnected", id)
+    console.log("disconnected", id);
     const element = document.getElementById(id);
-    element && element.remove();
+    if (element) {
+      if (document.querySelector("dl").children.length===1) {
+        const item = document.createElement('dd');
+        item.setAttribute("class", "noItem");
+        item.textContent = "No channels";
+        document.querySelector("dl").appendChild(item);
+      }
+      element.remove();
+    }
     delete streamers[id];
   });
   node.start(err => {
