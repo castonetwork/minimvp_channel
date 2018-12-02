@@ -7,6 +7,7 @@ const wsSource = require("pull-ws/source");
 const wsSink = require("pull-ws");
 const {sendStream, recvNotify} = require("./pushnNotify");
 const {keepAlive, createSession, attach, createRoom, joinRoom, configure, addIceCandidate} = require("./socketStream");
+const crypto = require('crypto');
 
 const socketSingleTon = (()=> {
   let socket;
@@ -93,7 +94,7 @@ const setupNode = ({node, wsUrl}) => {
       let pushStreamer = Pushable();
       // setup a janus WebSocket interface
       const roomInfo = await setupJanusWebSocket({wsUrl});
-      peers[idStr] = {...peers[idStr], roomInfo};
+      peers[idStr] = {...peers[idStr], roomInfo, hash: crypto.createHash('md5').update(idStr).digest('hex')};
       pull(
         pushStreamer,
         stringify(),
