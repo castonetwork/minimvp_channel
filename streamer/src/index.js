@@ -127,12 +127,20 @@ const initSetup = () => {
       .forEach(o => o.addEventListener("click", e => {
         setAvatarId(e.currentTarget.getAttribute("data-id"));
       }));
-    document.getElementById("userInfoForm").addEventListener("submit", e => {
+    document.getElementById("userInfoForm").addEventListener("submit", async e => {
       const nickName = document.getElementById("nickName").value;
       if (document.getElementById("nickName").value) {
+        const {body} = await fetch(getComputedStyle(document.getElementsByClassName('avatar')[0]).backgroundImage.replace(/url\("(.*)"\)/g, "$1"));
+        const response = await new Response(body);
+        const blob = await response.blob();
+        const dataURI = await new Promise((resolve, reject)=>{
+          const r = new FileReader();
+          r.onload = e => resolve(e.target.result);
+          r.readAsDataURL(blob);
+        });
         localStorage.setItem("profile", JSON.stringify({
           "avatar": {
-            "id": avatarElements[0].getAttribute("data-id")
+            "image": dataURI
           },
           nickName
         }));
