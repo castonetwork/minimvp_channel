@@ -108,9 +108,50 @@ const handleStreamer = (protocol, conn) => {
   networkReadyNotify(true);
 };
 
+let profile = {};
+const getProfile = () => JSON.parse(localStorage.getItem("profile"));
+const gotoStudio = () => {
+  document.body.setAttribute("data-scene", "studio");
+  document.getElementById("streamerId").textContent = profile.nickName;
+};
+
+const initSetup = () => {
+  if (!localStorage.getItem("profile")) {
+    const avatarElements = document.getElementsByClassName("avatar");
+    const randomAvatarId = `${~~(Math.random() * 52)}`.padStart(2, "0");
+    console.log(randomAvatarId);
+    const setAvatarId = id =>
+      Array.from(avatarElements).forEach(o => o.setAttribute("data-id", id));
+    setAvatarId(randomAvatarId);
+    document.querySelectorAll(".card>.thumbnails>dd")
+      .forEach(o => o.addEventListener("click", e => {
+        setAvatarId(e.currentTarget.getAttribute("data-id"));
+      }));
+    document.getElementById("userInfoForm").addEventListener("submit", e => {
+      const nickName = document.getElementById("nickName").value;
+      if (document.getElementById("nickName").value) {
+        localStorage.setItem("profile", JSON.stringify({
+          "avatar": {
+            "id": avatarElements[0].getAttribute("data-id")
+          },
+          nickName
+        }));
+        profile = getProfile();
+        gotoStudio();
+      }
+      e.preventDefault();
+    });
+    return false;
+  } else {
+    profile = getProfile();
+    gotoStudio();
+    return true;
+  }
+};
+
 const initApp = async () => {
   console.log("init app");
-  await domReady();
+  initSetup() && await domReady();
   const node = await createNode();
   console.log("node created");
   console.log("node is ready", node.peerInfo.id.toB58String());
@@ -131,4 +172,5 @@ const initApp = async () => {
     console.log(node.peerInfo.multiaddrs.toArray().map(o => o.toString()));
   });
 };
+
 initApp();
