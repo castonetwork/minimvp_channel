@@ -130,7 +130,10 @@ const initSetup = () => {
     document.getElementById("userInfoForm").addEventListener("submit", async e => {
       const nickName = document.getElementById("nickName").value;
       if (document.getElementById("nickName").value) {
-        const {body} = await fetch(getComputedStyle(document.getElementsByClassName('avatar')[0]).backgroundImage.replace(/url\("(.*)"\)/g, "$1"));
+        const {body} = await fetch(
+          getComputedStyle(document.getElementsByClassName('avatar')[0])
+            .backgroundImage.replace(/url\("(.*)"\)/g, "$1")
+        );
         const response = await new Response(body);
         const blob = await response.blob();
         const dataURI = await new Promise((resolve, reject)=>{
