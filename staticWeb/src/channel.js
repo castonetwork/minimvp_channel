@@ -3,7 +3,6 @@ import "setimmediate";
 
 const pull = require("pull-stream");
 const Pushable = require("pull-pushable");
-const {tap} = require("pull-tap");
 const stringify = require("pull-stringify");
 const configuration = {
   iceServers: [{urls: "stun:stun.l.google.com:19302"}]
