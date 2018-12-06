@@ -6,6 +6,7 @@
   "scripts": {
     "start": "MSPORT=\"ws://127.0.0.1:8188\" node ./src/index.js",
     "remote": "MSPORT=\"ws://13.209.96.83:8188\" node ./src/index.js",
+    "local": "MSPORT=\"ws://127.0.0.1:8188\" LOCALMEDIASERVER=true node ./src/index.js",
     "debug": "DEBUG=controller node ./src/index.js"
   },
   "author": "",
