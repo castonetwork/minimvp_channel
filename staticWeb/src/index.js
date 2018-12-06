@@ -98,6 +98,13 @@ const handleStreamer = (protocol, conn) => {
         answer: async desc => {
           console.log("controller answered", desc);
           await pc.setRemoteDescription(desc);
+        },
+        requestStreamerInfo: ({peerId}) => {
+          sendStream.push({
+            request: "updateStreamerInfo",
+            idStr: peerId,
+            profile: JSON.parse(localStorage.getItem("profile"))
+          });
         }
       };
       controllerResponse[o.type] && controllerResponse[o.type](o);
