@@ -22,6 +22,7 @@ RUN apt-get install -y \
     gengetopt \
     libtool \
     autotools-dev \
+    libconfig-dev \
     automake
 
 RUN apt-get install -y \
