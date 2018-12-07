@@ -125,7 +125,7 @@ const setupNode = ({node, wsUrl}) => {
               console.log('[MEDIASERVER] configured:', answerSDP)
               pushStreamer.push({
                 type: 'answer',
-                jsep: answerSDP.jsep,
+                sdp: answerSDP.sdp,
               })
             },
             'sendTrickleCandidate': async ({candidate}) => {
