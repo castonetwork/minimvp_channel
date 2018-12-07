@@ -63,8 +63,8 @@ const sendCreateOfferStream = async () =>
             audio: true,
             video: true
           });
-          stream.getTracks().some(track => pc.addTrack(track, stream));
-          document.getElementById("studio").srcObject = stream;
+          stream.getTracks().forEach(track => pc.addTrack(track, stream));
+          document.getElementById("studio_video").srcObject = stream;
           try {
             await pc.setLocalDescription(await pc.createOffer());
             console.log("localDescription", pc.localDescription);
