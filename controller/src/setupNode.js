@@ -6,7 +6,7 @@ const Websocket = require('ws')
 const wsSource = require('pull-ws/source')
 const wsSink = require('pull-ws')
 const {sendStream, recvNotify} = require('./pushnNotify')
-const {keepAlive, createSession, attach, createRoom, joinRoom, configure, addIceCandidate} = require(
+const {keepAlive, createSession, attach, createRoom, joinRoom, configure, addIceCandidate, subscribe, start} = require(
   './socketStream')
 const crypto = require('crypto')
 
@@ -49,19 +49,38 @@ const setupJanusWebSocket = async ({wsUrl, protocol = 'janus-protocol'}) =>
     })
   })
 
-const getNodeInput = async ({sessionId})=>{
+const getEndpoint = async ({sessionId}) =>{
   const intervalIds = socketSingleTon.getIntervalIds();
   const handleId = await attach(sessionId)
   /* generate keepalive */
   const timerHandler = setInterval(() => keepAlive({sessionId, handleId}),
     30000)
   intervalIds.push(timerHandler);
+  return {
+    sessionId,
+    handleId,
+    timerHandler
+  }
+}
+const getRoomInput = async (endpoint)=>{
+  const { sessionId, handleId } = endpoint;
   const roomId = await createRoom({sessionId, handleId})
   console.log(`[CONTROLLER] roomId: ${roomId}`)
   const joinedRoomInfo = await joinRoom({sessionId,handleId,roomId})
   console.log('[CONTROLLER] joining room')
   //peers[idStr].roomInfo.publisherId = joinedRoomInfo.plugindata.data.id
   const publisherId = joinedRoomInfo.plugindata.data.id
+  return {
+    ...endpoint,
+    roomId,
+    publisherId
+  }
+}
+
+const getRoomOutput = async (roomInput)=>{
+  const { sessionId, handleId, roomId, publisherId} = roomInput;
+  const roomOutput = await subscribe({sessionId,handleId,roomId,publisherId})
+  console.log('[CONTROLLER] joining room')
   return {
     sessionId,
     handleId,
@@ -112,7 +131,8 @@ const setupNode = async ({node, wsUrl}) => {
       console.log(`[STREAMER] ${idStr} is dialed`)
       let pushStreamer = Pushable()
       // setup a janus WebSocket interface
-      const roomInfo = await getNodeInput(session);
+      const endpoint = await getEndpoint(session)
+      const roomInfo = await getRoomInput(endpoint);
       peers[idStr] = {
         ...peers[idStr],
         roomInfo,
