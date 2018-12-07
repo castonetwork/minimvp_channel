@@ -12,13 +12,16 @@ const crypto = require('crypto')
 
 const socketSingleTon = (() => {
   let socket
+  let intervalIds = [];
   return {
     getSocket: (wsUrl, protocol) => {
       if (!socket) {
         socket = new Websocket(wsUrl, protocol)
+        socket.on('close', () => intervalIds.map(clearInterval));
       }
       return socket
     },
+    getIntervalIds : () => intervalIds
   }
 })()
 
@@ -38,24 +41,38 @@ const setupJanusWebSocket = async ({wsUrl, protocol = 'janus-protocol'}) =>
         recvNotify(o)
       }),
     )
-
+    
     /* mediaServer initialize Sequence */
     const sessionId = await createSession()
-    const handleId = await attach(sessionId)
-    /* generate keepalive */
-    const timerHandler = setInterval(() => keepAlive({sessionId, handleId}),
-      30000)
-    const roomId = await createRoom({sessionId, handleId})
-    console.log(`[CONTROLLER] roomId: ${roomId}`)
-    /* TODO: timerHanbdler가 외부 요인에 의해 reset 되야하는 경우 구현 */
-    socket.on('close', () => clearInterval(timerHandler))
     resolve({
-      sessionId, handleId, roomId,
+      sessionId
     })
   })
 
+const getNodeInput = async ({sessionId})=>{
+  const intervalIds = socketSingleTon.getIntervalIds();
+  const handleId = await attach(sessionId)
+  /* generate keepalive */
+  const timerHandler = setInterval(() => keepAlive({sessionId, handleId}),
+    30000)
+  intervalIds.push(timerHandler);
+  const roomId = await createRoom({sessionId, handleId})
+  console.log(`[CONTROLLER] roomId: ${roomId}`)
+  const joinedRoomInfo = await joinRoom({sessionId,handleId,roomId})
+  console.log('[CONTROLLER] joining room')
+  //peers[idStr].roomInfo.publisherId = joinedRoomInfo.plugindata.data.id
+  const publisherId = joinedRoomInfo.plugindata.data.id
+  return {
+    sessionId,
+    handleId,
+    timerHandler,
+    roomId,
+    publisherId
+  }
+}
 /* setup Node */
-const setupNode = ({node, wsUrl}) => {
+const setupNode = async ({node, wsUrl}) => {
+  let session = await setupJanusWebSocket({wsUrl})
   let peers = {}
   node.handle('/controller', (protocol, conn) => {
     const sendToChannel = Pushable()
@@ -95,7 +112,7 @@ const setupNode = ({node, wsUrl}) => {
       console.log(`[STREAMER] ${idStr} is dialed`)
       let pushStreamer = Pushable()
       // setup a janus WebSocket interface
-      const roomInfo = await setupJanusWebSocket({wsUrl})
+      const roomInfo = await getNodeInput(session);
       peers[idStr] = {
         ...peers[idStr],
         roomInfo,
@@ -117,10 +134,6 @@ const setupNode = ({node, wsUrl}) => {
         pull.drain(event => {
           const events = {
             'sendCreateOffer': async ({jsep}) => {
-              console.log('[CONTROLLER] joining room')
-              const joinedRoomInfo = await joinRoom(roomInfo)
-              peers[idStr].roomInfo.publisherId = joinedRoomInfo.plugindata.data.id
-              console.log('[CONTROLLER] room Joined')
               const answerSDP = await configure({...roomInfo, jsep})
               console.log('[MEDIASERVER] configured:', answerSDP)
               pushStreamer.push({
