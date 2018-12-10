@@ -168,7 +168,7 @@ const setupNode = async ({node, wsUrl}) => {
                 ...roomInfo,
               })
             },
-            'updateStreamerInfo': ({idStr, profile}) => {
+            'updateStreamerInfo': ({profile}) => {
               console.log(`[CONTROLLER] updateStreamerInfo from ${idStr}`);
               peers[idStr] = {...peers[idStr], profile};
             },

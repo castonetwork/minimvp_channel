@@ -1,13 +1,13 @@
 import "@babel/polyfill";
 
 const pull = require("pull-stream");
-const combineLatest = require("pull-combine-latest");
+const CombineLatest = require("pull-combine-latest");
 const Pushable = require("pull-pushable");
 const Notify = require("pull-notify");
 const createNode = require("./create-node");
 
 /* UI Stream */
-const btnReadyClickStream = Pushable();
+const onAirFormStream = Pushable();
 
 /* Network Stream */
 const sendStream = Pushable();
@@ -42,18 +42,36 @@ pc.onicecandidate = event => {
     });
   }
 };
-pc.oniceconnectionstatechange = () =>
+pc.oniceconnectionstatechange = () => {
   console.log("[ICE STATUS] ", pc.iceConnectionState);
+  if (pc.iceConnectionState === "connected") {
+    sendStream.push({
+      request: "updateStreamerInfo",
+      profile: JSON.parse(localStorage.getItem("profile")),
+      title: document.getElementById("title").value
+    });
+  }
+}
 
 // let the "negotiationneeded" event trigger offer generation
 pc.onnegotiationneeded = () => {
 };
 
-const onBtnReadyClick = e => console.log("ready clicked") || btnReadyClickStream.push(e);
+const onAirFormSubmit = e => {
+  console.log("ready clicked");
+  const titleDOM = document.getElementById("title");
+  if (!titleDOM.value) {
+    alert("please enter a title of stream");
+  } else {
+    onAirFormStream.push(e);
+    titleDOM.setAttribute("disabled", true);
+  }
+  e.preventDefault();
+}
 
 const sendCreateOfferStream = async () =>
   pull(
-    combineLatest([btnReadyClickStream, networkReadyNotify.listen()]),
+    CombineLatest([onAirFormStream, networkReadyNotify.listen()]),
     pull.drain(async o => {
       console.log("combineLatest", o);
       if (o[1]) {
@@ -84,7 +102,7 @@ const sendCreateOfferStream = async () =>
 
 const domReady = () => {
   console.log("DOM ready");
-  document.getElementById("btnReady").addEventListener("click", onBtnReadyClick);
+  document.getElementById("onAirForm").addEventListener("submit", onAirFormSubmit);
 };
 
 const handleStreamer = (protocol, conn) => {
@@ -92,6 +110,7 @@ const handleStreamer = (protocol, conn) => {
   pull(sendStream,
     pull.map(o => JSON.stringify(o)),
     conn,
+    Catch(err => console.log("ERROR", err)),
     pull.map(o => window.JSON.parse(o.toString())),
     pull.drain(o => {
       const controllerResponse = {
@@ -124,6 +143,7 @@ const gotoStudio = () => {
 
 const initSetup = () => {
   if (!localStorage.getItem("profile")) {
+    document.body.setAttribute("data-scene", "setup");
     const avatarElements = document.getElementsByClassName("avatar");
     const randomAvatarId = `${~~(Math.random() * 52)}`.padStart(2, "0");
     console.log(randomAvatarId);
@@ -162,6 +182,7 @@ const initSetup = () => {
     return false;
   } else {
     profile = getProfile();
+    document.body.setAttribute("data-scene", "studio");
     gotoStudio();
     return true;
   }
