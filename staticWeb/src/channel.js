@@ -9,6 +9,7 @@ const configuration = {
 };
 
 let sendController = Pushable();
+let listDOM, channelItem;
 window.pull = pull;
 const createNode = require("./create-node");
 const processEvents = async event => {
@@ -16,9 +17,23 @@ const processEvents = async event => {
   console.log(event);
   console.log(event.type);
   const events = {
-    "getPeerList": ({peers}) => {
-      for (let peer in peers) {
-        updateChannelInfo(peer)
+    "updateChannelInfo": ({peerId, info})=> {
+      console.log("updateChannelInfo", peerId, info);
+      let item = document.getElementById(peerId);
+      if (!item) {
+        item = channelItem.cloneNode(true);
+        item.setAttribute("id", peerId);
+        item.addEventListener("click", e => {
+          console.log("send request OFFER");
+          sendController.push({
+            request: "requestOfferSDP"
+          });
+        });
+        document.querySelector("dl").appendChild(item);
+        document.querySelector("dd.noItem").remove();
+      } else {
+        /* update info */
+
       }
     },
     "responseOfferSDP": async ({jsep}) => {
@@ -82,8 +97,8 @@ const initApp = async () => {
   console.log("init app");
 
   /* clone listDOM */
-  const listDOM = document.querySelector('dd.item');
-  const channelItem = listDOM.cloneNode(true);
+  listDOM = document.querySelector('dd.item');
+  channelItem = listDOM.cloneNode(true);
   listDOM.remove();
 
   const node = await createNode();
@@ -99,20 +114,6 @@ const initApp = async () => {
         return;
       }
       streamers[idStr] = true;
-      const item = channelItem.cloneNode(true);
-      item.setAttribute("id", idStr);
-      item.addEventListener("click", e => {
-        console.log("send request OFFER");
-        sendController.push({
-          request: "requestOfferSDP"
-        });
-      });
-      if (!document.getElementById(idStr)) {
-        document.querySelector("dl").appendChild(item);
-        document.querySelector("dd.noItem").remove();
-      } else {
-        /* update info */
-      }
       pull(
         sendController,
         stringify(),

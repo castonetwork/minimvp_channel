@@ -26,3 +26,7 @@ dd.item {
 dd.noItem {
   border: none;
 }
+
+#none {
+  display: none;
+}

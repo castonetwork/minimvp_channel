@@ -2,10 +2,11 @@ const pull = require('pull-stream')
 const stringify = require('pull-stringify')
 const Pushable = require('pull-pushable')
 const {tap} = require('pull-tap')
+const Many = require('pull-many')
 const Websocket = require('ws')
 const wsSource = require('pull-ws/source')
 const wsSink = require('pull-ws')
-const {sendStream, recvNotify} = require('./pushnNotify')
+const {sendStream, recvNotify, broadcastToChannel} = require('./pushnNotify')
 const {keepAlive, createSession, attach, createRoom, joinRoom, configure, addIceCandidate, subscribe, start} = require(
   './socketStream')
 const crypto = require('crypto')
@@ -58,8 +59,8 @@ const getEndpoint = async ({sessionId}) =>{
   intervalIds.push(timerHandler);
   return {
     sessionId,
-    handleId,
-    timerHandler
+    handleId
+    // timerHandler
   }
 }
 const getRoomInput = async (endpoint)=>{
@@ -95,8 +96,9 @@ const setupNode = async ({node, wsUrl}) => {
   let peers = {}
   node.handle('/controller', (protocol, conn) => {
     const sendToChannel = Pushable()
+    pull(broadcastToChannel.listen(), pull.log());
     pull(
-      sendToChannel,
+      Many([sendToChannel, broadcastToChannel.listen()]),
       stringify(),
       conn,
       pull.map(o => JSON.parse(o.toString())),
@@ -112,7 +114,7 @@ const setupNode = async ({node, wsUrl}) => {
         }
         events[event.type] && events[event.type](event)
       }),
-    )
+    );
   })
   node.on('peer:discovery', peerInfo => {
     const idStr = peerInfo.id.toB58String()
@@ -168,9 +170,14 @@ const setupNode = async ({node, wsUrl}) => {
                 ...roomInfo,
               })
             },
-            'updateStreamerInfo': ({profile}) => {
+            'updateStreamerInfo': ({profile, title=""}) => {
               console.log(`[CONTROLLER] updateStreamerInfo from ${idStr}`);
-              peers[idStr] = {...peers[idStr], profile};
+              peers[idStr] = {...peers[idStr], profile, title};
+              broadcastToChannel({
+                type: "updateChannelInfo",
+                peerId: idStr,
+                info: peers[idStr]
+              });
             },
           }
           events[event.request] && events[event.request](event)
