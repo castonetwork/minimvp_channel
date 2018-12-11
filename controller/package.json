@@ -25,6 +25,7 @@
     "libp2p-websocket-star": "^0.9.0",
     "libp2p-websockets": "^0.12.0",
     "pull-combine-latest": "^1.1.2",
+    "pull-many": "^1.0.8",
     "pull-notify": "^0.1.1",
     "pull-probe": "^1.0.2",
     "pull-promise": "^2.0.0",
