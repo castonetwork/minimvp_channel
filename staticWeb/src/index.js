@@ -58,6 +58,7 @@ pc.onnegotiationneeded = () => {
 }
 
 const onAirFormSubmit = e => {
+  e.preventDefault()
   console.log('ready clicked')
   const titleDOM = document.getElementById('title')
   if (!titleDOM.value) {
@@ -66,7 +67,7 @@ const onAirFormSubmit = e => {
     onAirFormStream.push(e)
     titleDOM.setAttribute('disabled', true)
   }
-  e.preventDefault()
+  
 }
 
 const sendCreateOfferStream = async () =>
@@ -101,9 +102,9 @@ const sendCreateOfferStream = async () =>
   )
 
 const domReady = () => {
-  console.log('DOM ready')
+  console.log('DOM ready', document.getElementById('onAirForm'))
   document.getElementById('onAirForm').
-    addEventListener('submit', onAirFormSubmit)
+    addEventListener('submit', e=>onAirFormSubmit(e))
 }
 
 const handleStreamer = (protocol, conn) => {
@@ -156,6 +157,7 @@ const initSetup = () => {
       }))
     document.getElementById('userInfoForm').
       addEventListener('submit', async e => {
+        e.preventDefault();
         const nickName = document.getElementById('nickName').value
         if (document.getElementById('nickName').value) {
           const {body} = await fetch(
@@ -181,18 +183,17 @@ const initSetup = () => {
         }
         e.preventDefault()
       })
-    return false
   } else {
     profile = getProfile()
     document.body.setAttribute('data-scene', 'studio')
     gotoStudio()
-    return true
   }
 }
 
 const initApp = async () => {
   console.log('init app')
-  initSetup() && await domReady()
+  initSetup()
+  domReady()
   const node = await createNode()
   console.log('node created')
   console.log('node is ready', node.peerInfo.id.toB58String())
