@@ -102,9 +102,9 @@ const sendCreateOfferStream = async () =>
   )
 
 const domReady = () => {
-  console.log('DOM ready', document.getElementById('onAirForm'))
+  console.log('DOM ready')
   document.getElementById('onAirForm').
-    addEventListener('submit', e=>onAirFormSubmit(e))
+    addEventListener('submit', onAirFormSubmit)
 }
 
 const handleStreamer = (protocol, conn) => {
