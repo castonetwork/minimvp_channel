@@ -32,7 +32,7 @@ const setupJanusWebSocket = async ({wsUrl, protocol = 'janus-protocol'}) =>
     pull(
       sendStream,
       pull.map(JSON.stringify),
-      tap(o => console.log('[SENT]', o)),
+      // tap(o => console.log('[SENT]', o)),
       wsSink(socket),
     )
     pull(
@@ -96,19 +96,24 @@ const setupNode = async ({node, wsUrl}) => {
   let peers = {}
   node.handle('/controller', (protocol, conn) => {
     const sendToChannel = Pushable()
-    pull(broadcastToChannel.listen(), pull.log());
     pull(
       Many([sendToChannel, broadcastToChannel.listen()]),
       stringify(),
       conn,
       pull.map(o => JSON.parse(o.toString())),
-      tap(console.log),
+      //tap(console.log),
       pull.drain(event => {
+        let streams = Object.keys(peers).reduce((acc, key)=>{
+          if(peers[key].title){
+            acc[key] = peers[key];
+          }
+          return acc;
+        },{})
         const events = {
           'requestPeerInfo': o => {
             sendToChannel.push({
               type: 'sendChannelList',
-              peers,
+              peers : streams,
             })
           },
         }
@@ -148,10 +153,10 @@ const setupNode = async ({node, wsUrl}) => {
       pull(
         pushStreamer,
         stringify(),
-        tap(o => console.log('[CONTROLLER]', o)),
+        // tap(o => console.log('[CONTROLLER]', o)),
         conn,
         pull.map(o => JSON.parse(o.toString())),
-        tap(o => console.log('[STREAMER]', o)),
+        // tap(o => console.log('[STREAMER]', o)),
         pull.map(o => ({...o, ...roomInfo})),
         pull.drain(event => {
           const events = {
@@ -177,6 +182,15 @@ const setupNode = async ({node, wsUrl}) => {
                 type: "updateChannelInfo",
                 peerId: idStr,
                 info: peers[idStr]
+              });
+            },
+            'updateStreamerSnapshot': ({snapshot}) => {
+              // console.log(`[CONTROLLER] updateStreamerSnapshot from ${idStr}`);
+              peers[idStr] = {...peers[idStr], snapshot};
+              broadcastToChannel({
+                type: "updateChannelSnapshot",
+                peerId: idStr,
+                snapshot
               });
             },
           }

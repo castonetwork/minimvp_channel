@@ -12,29 +12,48 @@ let sendController = Pushable();
 let listDOM, channelItem;
 window.pull = pull;
 const createNode = require("./create-node");
+const updateChannelElement = (peerId, info) =>{
+  let item = document.getElementById(peerId);
+  if (!item) {
+    item = channelItem.cloneNode(true);
+    item.setAttribute("id", peerId);
+    item.addEventListener("click", e => {
+      console.log("send request OFFER");
+      sendController.push({
+        request: "requestOfferSDP"
+      });
+    });
+    
+    item.querySelector(".info > .title").textContent = info.title;
+    if(info && info.profile){
+      item.querySelector(".avatar > .thumbnail").src = info.profile.avatar.image;
+      item.querySelector(".info > .streamer").textContent = info.profile.nickName;
+    }
+    item.querySelector(".channelInfo > .viewer").textContent = "0";
+    document.querySelector("dl").appendChild(item);
+    document.querySelector("dd.noItem") && document.querySelector("dd.noItem").remove();
+  } else {
+    /* update info */
+
+  }
+}
+const updateChannelSnapshot = (peerId, snapshot) =>{
+  let item = document.getElementById(peerId);
+  item.querySelector(".channelInfo").style.backgroundImage = `url("${snapshot}")`;
+}
+
 const processEvents = async event => {
   console.log("processEvents");
-  console.log(event);
+  // console.log(event);
   console.log(event.type);
   const events = {
     "updateChannelInfo": ({peerId, info})=> {
       console.log("updateChannelInfo", peerId, info);
-      let item = document.getElementById(peerId);
-      if (!item) {
-        item = channelItem.cloneNode(true);
-        item.setAttribute("id", peerId);
-        item.addEventListener("click", e => {
-          console.log("send request OFFER");
-          sendController.push({
-            request: "requestOfferSDP"
-          });
-        });
-        document.querySelector("dl").appendChild(item);
-        document.querySelector("dd.noItem").remove();
-      } else {
-        /* update info */
-
-      }
+      updateChannelElement(peerId, info)
+    },
+    "updateChannelSnapshot": ({peerId, snapshot}) =>{
+      //console.log("updateChannelSnapshot", peerId, snapshot);
+      updateChannelSnapshot(peerId, snapshot)
     },
     "responseOfferSDP": async ({jsep}) => {
       let pc = new RTCPeerConnection(configuration);
@@ -80,6 +99,7 @@ const processEvents = async event => {
       for (let peer in peers) {
         if (peers[peer] && peers[peer].roomInfo) {
           console.log("GOT PEER", peers[peer].roomInfo);
+          updateChannelElement(peer, peers[peer])
         }
       }
     }
@@ -120,7 +140,7 @@ const initApp = async () => {
         conn,
         pull.map(o => window.JSON.parse(o.toString())),
         pull.drain(async o => {
-          console.log("Drained", o);
+          // console.log("Drained", o);
           try {
             await processEvents(o);
           } catch(e) {

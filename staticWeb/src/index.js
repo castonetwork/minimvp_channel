@@ -30,6 +30,18 @@ pull(
     document.getElementById('btnReady').classList.add('button-outline')
   }),
 )
+
+/* a snapshot from the video element */
+const getSnapshot = ()=>{
+  let canvas = document.createElement("canvas");
+  let video = document.getElementById("studio_video");
+  canvas.width = video.offsetWidth / 4;
+  canvas.height = video.offsetHeight / 4;
+  let ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0,0, video.offsetWidth, video.offsetHeight, 0,0, canvas.width, canvas.height);
+  return canvas.toDataURL();
+}
+
 /* peerConnection */
 let pc = new RTCPeerConnection(null)
 // send any ice candidates to the other peer
@@ -50,6 +62,12 @@ pc.oniceconnectionstatechange = () => {
       profile: JSON.parse(localStorage.getItem('profile')),
       title: document.getElementById('title').value,
     })
+    setInterval(x=>{
+      sendStream.push({
+        request: "updateStreamerSnapshot",
+        snapshot: getSnapshot()
+      })  
+    }, 500);
   }
 }
 
@@ -174,7 +192,7 @@ const initSetup = () => {
           })
           localStorage.setItem('profile', JSON.stringify({
             'avatar': {
-              'image': dataURI,
+              'image': dataURI.replace("application/octet-stream", "image/svg+xml"),
             },
             nickName,
           }))

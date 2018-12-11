@@ -2,6 +2,9 @@
   width: 16em;
   height: 9em;
   border: solid gray 1px;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
 }
 .descriptionContainer {
   display: flex;
@@ -20,7 +23,7 @@ dd.item {
 }
 
 .avatar {
-  height: 80px;
+  width : 80px;
 }
 
 dd.noItem {
