@@ -59,8 +59,8 @@ const getEndpoint = async ({sessionId}) =>{
   intervalIds.push(timerHandler);
   return {
     sessionId,
+    /* TODO : TIME Handler clear 처리 */
     handleId
-    // timerHandler
   }
 }
 const getRoomInput = async (endpoint)=>{
@@ -81,13 +81,13 @@ const getRoomInput = async (endpoint)=>{
 const getRoomOutput = async (roomInput)=>{
   const { sessionId, handleId, roomId, publisherId} = roomInput;
   const roomOutput = await subscribe({sessionId,handleId,roomId,publisherId})
-  console.log('[CONTROLLER] joining room')
+  console.log('[CONTROLLER] joining room', roomOutput)
   return {
     sessionId,
     handleId,
-    timerHandler,
     roomId,
-    publisherId
+    publisherId,
+    jsep: roomOutput.jsep
   }
 }
 /* setup Node */
@@ -95,13 +95,14 @@ const setupNode = async ({node, wsUrl}) => {
   let session = await setupJanusWebSocket({wsUrl})
   let peers = {}
   node.handle('/controller', (protocol, conn) => {
+    let roomOutputInfo;
     const sendToChannel = Pushable()
     pull(
       Many([sendToChannel, broadcastToChannel.listen()]),
       stringify(),
       conn,
       pull.map(o => JSON.parse(o.toString())),
-      //tap(console.log),
+      tap(console.log),
       pull.drain(event => {
         let streams = Object.keys(peers).reduce((acc, key)=>{
           if(peers[key].title){
@@ -116,6 +117,32 @@ const setupNode = async ({node, wsUrl}) => {
               peers : streams,
             })
           },
+          'requestOfferSDP': async o => {
+            let roomInfo = peers[o.streamerId].roomInfo;
+            let subscribeEndpoint = await getEndpoint(roomInfo)
+            roomOutputInfo = await getRoomOutput({
+              ...roomInfo,
+              handleId: subscribeEndpoint.handleId
+            });
+            sendToChannel.push({
+              type: "responseOfferSDP",
+              jsep: roomOutputInfo.jsep,
+            })
+          },
+          'sendTrickleCandidate': async ({candidate}) => {
+            console.log('[CONTROLLER] addIceCandidate')
+            //getOutput Info를 보관해야함
+            //let roomInfo = peers[o.streamerId].roomInfo;
+            await addIceCandidate({
+              candidate,
+              ...roomOutputInfo,
+            })
+          },
+          'sendCreateAnswer': async ({jsep}) => {
+            //getOutput Info를 가져와야함
+            //let roomInfo = peers[o.streamerId].roomInfo;
+            await start({...roomOutputInfo, jsep})
+          }
         }
         events[event.type] && events[event.type](event)
       }),

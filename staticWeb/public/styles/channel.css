@@ -1,3 +1,18 @@
+
+/* scene selector */
+body>.container {
+  display: none;
+  height: 100%;
+}
+
+body[data-scene=list]>.container#list {
+  display: block;
+}
+
+body[data-scene=viewer]>.container#viewer {
+  display: block;
+}
+
 .channelInfo {
   width: 16em;
   height: 9em;

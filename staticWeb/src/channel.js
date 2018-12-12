@@ -12,6 +12,13 @@ let sendController = Pushable();
 let listDOM, channelItem;
 window.pull = pull;
 const createNode = require("./create-node");
+
+const gotoViewer = (info) => {
+  document.body.setAttribute('data-scene', 'viewer')
+  document.getElementById('streamerId').textContent = info.profile.nickName;
+  document.getElementById('streamerTitle').textContent = info.title;
+}
+
 const updateChannelElement = (peerId, info) =>{
   let item = document.getElementById(peerId);
   if (!item) {
@@ -19,8 +26,10 @@ const updateChannelElement = (peerId, info) =>{
     item.setAttribute("id", peerId);
     item.addEventListener("click", e => {
       console.log("send request OFFER");
+      gotoViewer(info);
       sendController.push({
-        request: "requestOfferSDP"
+        type: "requestOfferSDP",
+        streamerId : peerId
       });
     });
     
@@ -44,7 +53,6 @@ const updateChannelSnapshot = (peerId, snapshot) =>{
 
 const processEvents = async event => {
   console.log("processEvents");
-  // console.log(event);
   console.log(event.type);
   const events = {
     "updateChannelInfo": ({peerId, info})=> {
@@ -52,7 +60,6 @@ const processEvents = async event => {
       updateChannelElement(peerId, info)
     },
     "updateChannelSnapshot": ({peerId, snapshot}) =>{
-      //console.log("updateChannelSnapshot", peerId, snapshot);
       updateChannelSnapshot(peerId, snapshot)
     },
     "responseOfferSDP": async ({jsep}) => {
@@ -62,7 +69,7 @@ const processEvents = async event => {
         console.log("[ICE]", event);
         if (event.candidate) {
           sendController.push({
-            request: "sendTrickleCandidate",
+            type: "sendTrickleCandidate",
             candidate: event.candidate
           });
         }
@@ -71,29 +78,22 @@ const processEvents = async event => {
       pc.oniceconnectionstatechange = function (e) {
         console.log("[ICE STATUS] ", pc.iceConnectionState);
       };
-      // let the "negotiationneeded" event trigger offer generation
       pc.ontrack = async event => {
-        console.log("[ON Strack]", event);
-        console.log(event);
-        //event.streams.forEach(track => pc.addTrack(track, stream));
-        document.getElementById("studio").srcObject = event.streams[0];
+        console.log("[ON track]", event);
+        document.getElementById("video").srcObject = event.streams[0];
       };
 
       try {
         await pc.setRemoteDescription(jsep);
         await pc.setLocalDescription(await pc.createAnswer());
         sendController.push({
-          request: "sendCreateAnswer",
+          type: "sendCreateAnswer",
           jsep: pc.localDescription
         });
         console.log("localDescription", pc.localDescription);
       } catch (err) {
         console.error(err);
       }
-
-      // get a local stream, show it in a self-view and add it to be sent
-      //stream.getTracks().forEach(track => pc.addTrack(track, stream));
-      //document.getElementById("studio").srcObject = stream;
     },
     "sendChannelList": ({peers})=> {
       for (let peer in peers) {
@@ -116,6 +116,8 @@ const initApp = async () => {
   let streamers = {};
   console.log("init app");
 
+  /* set list screen */
+  document.body.setAttribute('data-scene', 'list')
   /* clone listDOM */
   listDOM = document.querySelector('dd.item');
   channelItem = listDOM.cloneNode(true);
@@ -130,7 +132,6 @@ const initApp = async () => {
     !streamers[idStr] &&
     node.dialProtocol(peerInfo, "/controller", (err, conn) => {
       if (err) {
-        // console.error("Failed to dial:", err);
         return;
       }
       streamers[idStr] = true;
@@ -140,13 +141,11 @@ const initApp = async () => {
         conn,
         pull.map(o => window.JSON.parse(o.toString())),
         pull.drain(async o => {
-          // console.log("Drained", o);
           try {
             await processEvents(o);
           } catch(e) {
             console.error("[event]", e);
           } finally {
-            console.log("setRemoteDescription");
           }
         })
       );
@@ -183,5 +182,4 @@ const initApp = async () => {
     console.log("peer-discovery", peerInfo.id.toB58String());
   })
 };
-//document.addEventListener("DOMContentLoaded", initApp);
 initApp();
