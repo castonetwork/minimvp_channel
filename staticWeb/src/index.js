@@ -214,12 +214,26 @@ const initApp = async () => {
       }),
     )
     networkReadyNotify(true)
+=======
+  let hasController = false;
+  node.handle('/streamer', (protocol, conn) =>{
+    if(!hasController){
+      handleStreamer(protocol, conn);
+      hasController = true;
+    } 
+>>>>>>> 86c3fc74ea39165355b3c5f10e9e26bc5d79cd0c
   })
   node.on('peer:connect', peerInfo => {
     console.log('peer connected:', peerInfo.id.toB58String())
+
   })
   node.on('peer:disconnect', peerInfo => {
     console.log('peer disconnected:', peerInfo.id.toB58String())
+<<<<<<< HEAD
+=======
+    networkReadyNotify(false)
+    hasController = false;
+>>>>>>> 86c3fc74ea39165355b3c5f10e9e26bc5d79cd0c
   })
   node.start(err => {
     if (err) {
