@@ -43,7 +43,14 @@ const getSnapshot = ()=>{
 }
 
 /* peerConnection */
-let pc = new RTCPeerConnection(null)
+const configure = {
+  iceServers: [{
+    urls: [
+      "stun:stun.l.google.com:19302"
+    ]
+  }]
+}
+let pc = new RTCPeerConnection(configure)
 // send any ice candidates to the other peer
 pc.onicecandidate = event => {
   console.log('[ICE]', event)
@@ -215,14 +222,21 @@ const initApp = async () => {
   const node = await createNode()
   console.log('node created')
   console.log('node is ready', node.peerInfo.id.toB58String())
-
-  node.handle('/streamer', handleStreamer)
+  let hasController = false;
+  node.handle('/streamer', (protocol, conn) =>{
+    if(!hasController){
+      handleStreamer(protocol, conn);
+      hasController = true;
+    } 
+  })
   node.on('peer:connect', peerInfo => {
     console.log('peer connected:', peerInfo.id.toB58String())
+
   })
   node.on('peer:disconnect', peerInfo => {
     console.log('peer disconnected:', peerInfo.id.toB58String())
     networkReadyNotify(false)
+    hasController = false;
   })
   node.start(err => {
     if (err) {

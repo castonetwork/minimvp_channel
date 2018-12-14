@@ -101,7 +101,7 @@ const subscribe = async ({ sessionId, handleId, roomId, publisherId }) =>
         audio: true
       }
     },
-    o => console.log("joinRoom response", JSON.stringify(o)) || o
+    o => console.log("subscribeRoom response", JSON.stringify(o)) || o
   );
 
 const start = async ({ sessionId, handleId, roomId, jsep }) =>
@@ -114,9 +114,9 @@ const start = async ({ sessionId, handleId, roomId, jsep }) =>
         request: "start",
         room: roomId
       },
-      jsep: jsep
+      jsep
     },
-    o => console.log("joinRoom response", JSON.stringify(o)) || o
+    o => console.log("startSubscribing response", JSON.stringify(o)) || o
   );
 
 const configure = async ({ sessionId, handleId, roomId, jsep }) =>

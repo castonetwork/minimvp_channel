@@ -78,15 +78,11 @@ const getRoomInput = async (endpoint)=>{
   }
 }
 
-const getRoomOutput = async (roomInput)=>{
-  const { sessionId, handleId, roomId, publisherId} = roomInput;
-  const roomOutput = await subscribe({sessionId,handleId,roomId,publisherId})
-  console.log('[CONTROLLER] joining room', roomOutput)
+const getRoomOutput = async (outputEndpoint)=>{
+  const roomOutput = await subscribe(outputEndpoint)
+  console.log('[CONTROLLER] subscribin room');
   return {
-    sessionId,
-    handleId,
-    roomId,
-    publisherId,
+    ...outputEndpoint,
     jsep: roomOutput.jsep
   }
 }
@@ -130,9 +126,7 @@ const setupNode = async ({node, wsUrl}) => {
             })
           },
           'sendTrickleCandidate': async ({candidate}) => {
-            console.log('[CONTROLLER] addIceCandidate')
-            //getOutput Info를 보관해야함
-            //let roomInfo = peers[o.streamerId].roomInfo;
+            console.log('[CONTROLLER] addIceCandidate', candidate)
             await addIceCandidate({
               candidate,
               ...roomOutputInfo,
