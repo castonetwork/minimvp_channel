@@ -1,6 +1,7 @@
 import '@babel/polyfill'
 
 const pull = require('pull-stream')
+const Catch = require('pull-catch')
 const CombineLatest = require('pull-combine-latest')
 const Pushable = require('pull-pushable')
 const Notify = require('pull-notify')
@@ -10,7 +11,6 @@ const createNode = require('./create-node')
 const onAirFormStream = Pushable()
 
 /* Network Stream */
-const sendStream = Pushable()
 const networkReadyNotify = Notify()
 
 /* watch network Ready Status */
@@ -42,39 +42,6 @@ const getSnapshot = ()=>{
   return canvas.toDataURL();
 }
 
-/* peerConnection */
-let pc = new RTCPeerConnection(null)
-// send any ice candidates to the other peer
-pc.onicecandidate = event => {
-  console.log('[ICE]', event)
-  if (event.candidate) {
-    sendStream.push({
-      request: 'sendTrickleCandidate',
-      candidate: event.candidate,
-    })
-  }
-}
-pc.oniceconnectionstatechange = () => {
-  console.log('[ICE STATUS] ', pc.iceConnectionState)
-  if (pc.iceConnectionState === 'connected') {
-    sendStream.push({
-      request: 'updateStreamerInfo',
-      profile: JSON.parse(localStorage.getItem('profile')),
-      title: document.getElementById('title').value,
-    })
-    setInterval(x=>{
-      sendStream.push({
-        request: "updateStreamerSnapshot",
-        snapshot: getSnapshot()
-      })  
-    }, 500);
-  }
-}
-
-// let the "negotiationneeded" event trigger offer generation
-pc.onnegotiationneeded = () => {
-}
-
 const onAirFormSubmit = e => {
   e.preventDefault()
   console.log('ready clicked')
@@ -88,69 +55,10 @@ const onAirFormSubmit = e => {
   
 }
 
-const sendCreateOfferStream = async () =>
-  pull(
-    CombineLatest([onAirFormStream, networkReadyNotify.listen()]),
-    pull.drain(async o => {
-      console.log('combineLatest', o)
-      if (o[1]) {
-        try {
-          // get a local stream, show it in a self-view and add it to be sent
-          const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: true,
-          })
-          stream.getTracks().forEach(track => pc.addTrack(track, stream))
-          document.getElementById('studio_video').srcObject = stream
-          try {
-            await pc.setLocalDescription(await pc.createOffer())
-            console.log('localDescription', pc.localDescription)
-            sendStream.push({
-              request: 'sendCreateOffer',
-              jsep: pc.localDescription,
-            })
-          } catch (err) {
-            console.error(err)
-          }
-        } catch (err) {
-          console.error(err)
-        }
-      }
-    }),
-  )
-
 const domReady = () => {
   console.log('DOM ready')
   document.getElementById('onAirForm').
     addEventListener('submit', onAirFormSubmit)
-}
-
-const handleStreamer = (protocol, conn) => {
-  console.log('dialed!!', protocol, conn)
-  pull(sendStream,
-    pull.map(o => JSON.stringify(o)),
-    conn,
-    pull.map(o => window.JSON.parse(o.toString())),
-    pull.drain(o => {
-      const controllerResponse = {
-        answer: async desc => {
-          console.log('controller answered', desc)
-          await pc.setRemoteDescription(desc)
-        },
-        requestStreamerInfo: ({peerId}) => {
-          sendStream.push({
-            request: 'updateStreamerInfo',
-            idStr: peerId,
-            profile: JSON.parse(localStorage.getItem('profile')),
-          })
-        },
-      }
-      controllerResponse[o.type] && controllerResponse[o.type](o)
-    }),
-  )
-  /* build a createOfferStream */
-  sendCreateOfferStream()
-  networkReadyNotify(true)
 }
 
 let profile = {}
@@ -216,13 +124,102 @@ const initApp = async () => {
   console.log('node created')
   console.log('node is ready', node.peerInfo.id.toB58String())
 
-  node.handle('/streamer', handleStreamer)
+  node.handle('/streamer', (protocol, conn) => {
+    const sendStream = Pushable()
+    /* peerConnection */
+    let pc = new RTCPeerConnection( {iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
+    // send any ice candidates to the other peer
+    pc.onicecandidate = event => {
+      console.log('[ICE]', event)
+      if (event.candidate) {
+        sendStream.push({
+          request: 'sendTrickleCandidate',
+          candidate: event.candidate,
+        })
+      }
+    }
+    pc.oniceconnectionstatechange = () => {
+      console.log('[ICE STATUS] ', pc.iceConnectionState)
+      if (pc.iceConnectionState === 'connected') {
+        sendStream.push({
+          request: 'updateStreamerInfo',
+          profile: JSON.parse(localStorage.getItem('profile')),
+          title: document.getElementById('title').value,
+        })
+        setInterval(x => {
+          sendStream.push({
+            request: "updateStreamerSnapshot",
+            snapshot: getSnapshot()
+          })
+        }, 500);
+      }
+    }
+
+    // let the "negotiationneeded" event trigger offer generation
+    pc.onnegotiationneeded = () => {
+    }
+    console.log('dialed!!', protocol, conn)
+    pull(sendStream,
+      pull.map(o => JSON.stringify(o)),
+      conn,
+      Catch(function onErr(err) {
+        console.log(err.message, 'test', 'should callback with error')
+      }),
+      pull.map(o => window.JSON.parse(o.toString())),
+      pull.drain(o => {
+        const controllerResponse = {
+          answer: async desc => {
+            console.log('controller answered', desc)
+            await pc.setRemoteDescription(desc)
+          },
+          requestStreamerInfo: ({peerId}) => {
+            sendStream.push({
+              request: 'updateStreamerInfo',
+              idStr: peerId,
+              profile: JSON.parse(localStorage.getItem('profile')),
+            })
+          },
+        }
+        controllerResponse[o.type] && controllerResponse[o.type](o)
+      }),
+    )
+    /* build a createOfferStream */
+    pull(
+      CombineLatest([onAirFormStream, networkReadyNotify.listen()]),
+      pull.drain(async o => {
+        console.log('combineLatest', o)
+        if (o[1]) {
+          try {
+            // get a local stream, show it in a self-view and add it to be sent
+            const stream = await navigator.mediaDevices.getUserMedia({
+              audio: true,
+              video: true,
+            })
+            stream.getTracks().forEach(track => pc.addTrack(track, stream))
+            document.getElementById('studio_video').srcObject = stream
+            try {
+              await pc.setLocalDescription(await pc.createOffer())
+              console.log('localDescription', pc.localDescription)
+              sendStream.push({
+                request: 'sendCreateOffer',
+                jsep: pc.localDescription,
+              })
+            } catch (err) {
+              console.error(err)
+            }
+          } catch (err) {
+            console.error(err)
+          }
+        }
+      }),
+    )
+    networkReadyNotify(true)
+  })
   node.on('peer:connect', peerInfo => {
     console.log('peer connected:', peerInfo.id.toB58String())
   })
   node.on('peer:disconnect', peerInfo => {
     console.log('peer disconnected:', peerInfo.id.toB58String())
-    networkReadyNotify(false)
   })
   node.start(err => {
     if (err) {
