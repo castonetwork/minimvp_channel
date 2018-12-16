@@ -6,11 +6,7 @@
 ## build all
 (from root directory)
 ```
-cd streamer
-npm install
 cd ../controller
-npm install
-cd ../channels
 npm install
 cd ../mediaServer
 npm run build
@@ -24,16 +20,6 @@ npm start
 ### controller
 ```
 cd controller
-npm start
-```
-### streamer(webServer)
-```
-cd streamer
-npm start
-```
-### channels(webServer)
-```
-cd channels
 npm start
 ```
 # Workflow sequence diagrams
